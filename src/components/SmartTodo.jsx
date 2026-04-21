@@ -231,7 +231,7 @@ export function SmartTodo() {
                   onChange={(e) => setNewTodo(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAddTodo()}
                   placeholder="새로운 할 일을 입력하세요..."
-                  className="flex-1 bg-background border-2 border-border/70 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all shadow-inner"
+                  className="flex-1 min-w-0 bg-background border-2 border-border/70 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all shadow-inner"
                 />
                 <button
                   onClick={handleAddTodo}
