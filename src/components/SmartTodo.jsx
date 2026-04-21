@@ -231,7 +231,7 @@ export function SmartTodo() {
                   onChange={(e) => setNewTodo(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAddTodo()}
                   placeholder="새로운 할 일을 입력하세요..."
-                  className="flex-1 bg-secondary/50 border border-border/50 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                  className="flex-1 bg-background border-2 border-border/70 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all shadow-inner"
                 />
                 <button
                   onClick={handleAddTodo}
@@ -255,10 +255,10 @@ export function SmartTodo() {
                             key={cat}
                             onClick={() => setSelectedCategory(cat)}
                             className={cn(
-                              "flex-1 px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all duration-200",
+                              "flex-1 px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all duration-200 border",
                               selectedCategory === cat
-                                ? `bg-gradient-to-r ${config.color} text-white shadow-lg`
-                                : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+                                ? `bg-gradient-to-r ${config.color} text-white shadow-lg border-transparent`
+                                : "bg-background border-border/70 text-muted-foreground hover:text-foreground hover:border-primary/50"
                             )}
                           >
                             <Icon className="h-3.5 w-3.5" />
@@ -278,10 +278,10 @@ export function SmartTodo() {
                             key={pri}
                             onClick={() => setSelectedPriority(pri)}
                             className={cn(
-                              "flex-1 px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all duration-200",
+                              "flex-1 px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all duration-200 border",
                               selectedPriority === pri
-                                ? "bg-foreground text-background"
-                                : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+                                ? "bg-foreground text-background border-transparent"
+                                : "bg-background border-border/70 text-muted-foreground hover:text-foreground hover:border-primary/50"
                             )}
                           >
                             <span className={cn("h-2 w-2 rounded-full", config.dot)} />
@@ -299,7 +299,7 @@ export function SmartTodo() {
                     <select
                       value={selectedDuration}
                       onChange={(e) => setSelectedDuration(e.target.value)}
-                      className="w-full bg-secondary/50 border border-border/50 text-foreground text-xs rounded-lg px-3 py-2 focus:ring-1 focus:ring-primary/50 outline-none appearance-none cursor-pointer"
+                      className="bg-background border border-border/70 rounded-xl px-3 py-2 text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm w-full"
                     >
                       <option value={15}>15분</option>
                       <option value={30}>30분</option>
@@ -311,7 +311,7 @@ export function SmartTodo() {
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2"><Repeat className="h-3 w-3"/> 반복 규칙</span>
                     <button
                       onClick={() => openRepeatModalFor('new')}
-                      className="w-full bg-secondary/50 border border-border/50 text-foreground text-xs rounded-lg px-3 py-2 text-left hover:bg-secondary transition-colors"
+                      className="bg-background border border-border/70 rounded-xl px-3 py-2 text-xs font-medium flex items-center justify-center gap-2 hover:bg-secondary w-full transition-colors shadow-sm text-foreground"
                     >
                       {formatRepeatLabel(newTodoRepeat)}
                     </button>
@@ -352,61 +352,64 @@ export function SmartTodo() {
                         todo.completed && "opacity-60"
                       )}
                     >
-                      <div className="flex items-start gap-4">
-                        {/* Checkbox */}
-                        <button
-                          onClick={() => handleToggleTaskWithConfirm(todo)}
-                          className={cn(
-                            "mt-1 h-6 w-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 shrink-0",
-                            todo.completed
-                              ? "bg-gradient-to-br from-cyan-500 to-teal-500 border-transparent"
-                              : "border-border hover:border-primary"
-                          )}
-                        >
-                          {todo.completed && <Check className="h-3.5 w-3.5 text-white" />}
-                        </button>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0 pb-1">
-                          <p
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          {/* Checkbox */}
+                          <button
+                            onClick={() => handleToggleTaskWithConfirm(todo)}
                             className={cn(
-                              "text-[15px] font-medium text-foreground transition-all break-all leading-snug",
-                              todo.completed && "line-through text-muted-foreground"
+                              "mt-0.5 h-6 w-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 shrink-0",
+                              todo.completed
+                                ? "bg-gradient-to-br from-cyan-500 to-teal-500 border-transparent shadow-[0_0_10px_rgba(34,211,238,0.4)]"
+                                : "border-border/80 hover:border-primary bg-background shadow-inner"
                             )}
                           >
-                            {todo.text || todo.title} 
-                          </p>
-                          <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                            <span
+                            {todo.completed && <Check className="h-3.5 w-3.5 text-white" />}
+                          </button>
+
+                          {/* Content */}
+                          <div className="flex-1 min-w-0 pb-1">
+                            <p
                               className={cn(
-                                "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-gradient-to-r text-white shrink-0",
-                                catConfig.color
+                                "text-[15px] font-medium text-foreground transition-all break-all leading-snug",
+                                todo.completed && "line-through text-muted-foreground"
                               )}
                             >
-                              <Icon className="h-3 w-3" />
-                              {catConfig.label}
-                            </span>
-                            <span className="flex items-center gap-1 text-[10px] text-muted-foreground bg-secondary/50 rounded-md px-2 py-0.5 shrink-0">
-                              <span className={cn("h-1.5 w-1.5 rounded-full", priConfig.dot)} />
-                              {priConfig.label}
-                            </span>
-                            {(todo.duration !== undefined) && (
-                              <span className="flex items-center gap-1 text-[10px] font-medium text-cyan-400 bg-cyan-500/10 rounded-md px-2 py-0.5 shrink-0">
-                                <Timer className="h-3 w-3" />
-                                {todo.duration}분
+                              {todo.text || todo.title} 
+                            </p>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                              <span
+                                className={cn(
+                                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-gradient-to-r text-white shrink-0 shadow-sm",
+                                  catConfig.color
+                                )}
+                              >
+                                <Icon className="h-3 w-3" />
+                                {catConfig.label}
                               </span>
-                            )}
-                            {todo.repeat && todo.repeat !== 'none' && (
-                              <span className="flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 rounded-md px-2 py-0.5 shrink-0">
-                                <Repeat className="h-3 w-3" />
-                                {formatRepeatLabel(todo.repeat)}
+                              <span className="flex items-center gap-1 text-[10px] text-muted-foreground bg-background border border-border/50 rounded-md px-2 py-0.5 shrink-0 shadow-sm">
+                                <span className={cn("h-1.5 w-1.5 rounded-full", priConfig.dot)} />
+                                {priConfig.label}
                               </span>
-                            )}
+                              {(todo.duration !== undefined) && (
+                                <span className="flex items-center gap-1 text-[10px] font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 rounded-md px-2 py-0.5 shrink-0">
+                                  <Timer className="h-3 w-3" />
+                                  {todo.duration}분
+                                </span>
+                              )}
+                              {todo.repeat && todo.repeat !== 'none' && (
+                                <span className="flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 border border-primary/20 rounded-md px-2 py-0.5 shrink-0">
+                                  <Repeat className="h-3 w-3" />
+                                  {formatRepeatLabel(todo.repeat)}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
                         {/* Controls */}
-                        <div className="flex flex-col md:flex-row items-center justify-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <div className="flex flex-row items-center justify-end gap-2 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity mt-2 sm:mt-0">
                           
                           {/* Duration Edit Button */}
                           <div className="relative">
@@ -421,7 +424,7 @@ export function SmartTodo() {
                               <option value={60}>1시간</option>
                               <option value={120}>2시간</option>
                             </select>
-                            <button className="h-8 w-8 rounded-lg border border-border/50 bg-card flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200 shadow-sm">
+                            <button className="h-8 w-8 rounded-lg border border-border/70 bg-background flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200 shadow-sm">
                               <Timer className="h-4 w-4" />
                             </button>
                           </div>
@@ -430,7 +433,7 @@ export function SmartTodo() {
                           <button 
                             onClick={() => openRepeatModalFor(todo.id)}
                             title="반복 설정 변경"
-                            className="h-8 w-8 rounded-lg border border-border/50 bg-card flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200 shadow-sm"
+                            className="h-8 w-8 rounded-lg border border-border/70 bg-background flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200 shadow-sm"
                           >
                             <Repeat className="h-4 w-4" />
                           </button>
@@ -438,7 +441,7 @@ export function SmartTodo() {
                           {/* Delete Button */}
                           <button
                             onClick={() => deleteTask(todo.id)}
-                            className="h-8 w-8 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive hover:bg-destructive hover:text-white transition-all duration-200"
+                            className="h-8 w-8 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive hover:bg-destructive hover:text-white transition-all duration-200 shadow-sm"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
