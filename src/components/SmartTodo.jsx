@@ -243,7 +243,7 @@ export function SmartTodo() {
 
               {/* Advanced Settings */}
               <div className="flex flex-col gap-4 mt-4 pt-4 border-t border-border/50">
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1 min-w-[140px]">
                     <span className="text-xs text-muted-foreground mb-2 block">카테고리</span>
                     <div className="flex gap-2">
@@ -293,7 +293,7 @@ export function SmartTodo() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1 min-w-[140px]">
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2"><Timer className="h-3 w-3"/> 소요시간</span>
                     <select
