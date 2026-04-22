@@ -56,6 +56,33 @@ export const saveTasks = async (tasks) => {
   return tasks;
 };
 
+// 데이터 삭제
+export const deleteTaskDB = async (id) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('Supabase 삭제 실패:', error.message);
+      }
+    }
+    
+    // 로컬에서도 명시적으로 삭제 (안전장치)
+    const localTasks = await localforage.getItem('tasks');
+    if (localTasks) {
+      const filtered = localTasks.filter(t => t.id !== id);
+      await localforage.setItem('tasks', filtered);
+    }
+  } catch (err) {
+    console.error('삭제 처리 중 오류:', err);
+  }
+};
+
 // 모든 미완료 초기화
 export const clearAllIncompleteTasksDB = async () => {
   try {

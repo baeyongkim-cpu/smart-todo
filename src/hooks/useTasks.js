@@ -1,23 +1,40 @@
 import { useState, useEffect, useMemo } from 'react';
 import { isToday, isTomorrow, isBefore, startOfDay, addDays } from 'date-fns';
-import { loadTasks, saveTasks, clearAllTasksDB, clearRepeatingTasksDB, clearAllIncompleteTasksDB, supabase } from '../utils/db';
+import { loadTasks, saveTasks, deleteTaskDB, clearAllTasksDB, clearRepeatingTasksDB, clearAllIncompleteTasksDB, supabase } from '../utils/db';
 
 export const useTasks = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     // 1. 초기 데이터 로드
-    loadTasks().then((savedTasks) => {
-      setTasks(savedTasks || []);
-      setLoading(false);
-    });
+    loadTasks()
+      .then((savedTasks) => {
+        if (isMounted) setTasks(savedTasks || []);
+      })
+      .catch((err) => {
+        console.error('초기 데이터 로드 중 오류:', err);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
 
     // 2. 실시간 동기화 구독 (PC-폰 간 즉시 반영)
     let channel;
+
     const setupRealtime = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user || !isMounted) return;
+
+      // 이미 구독 중인 동일 이름의 채널이 있다면 제거 (Strict Mode 중복 호출 방지)
+      const existingChannel = supabase.getChannels().find(c => c.name === 'tasks-realtime-sync');
+      if (existingChannel) {
+        await supabase.removeChannel(existingChannel);
+      }
+
+      if (!isMounted) return;
 
       channel = supabase
         .channel('tasks-realtime-sync')
@@ -27,12 +44,11 @@ export const useTasks = () => {
             event: '*', 
             schema: 'public',
             table: 'tasks'
-            // 서버 필터를 제거하고 클라이언트에서 즉시 재로드하는 방식으로 안정성 확보
           },
           async (payload) => {
             console.log('실시간 동기화 신호 수신');
             const freshTasks = await loadTasks();
-            setTasks(freshTasks);
+            if (isMounted) setTasks(freshTasks);
           }
         )
         .subscribe();
@@ -44,7 +60,7 @@ export const useTasks = () => {
     const handleFocus = async () => {
       console.log('화면 포커스 감지: 데이터 새로고침');
       const freshTasks = await loadTasks();
-      setTasks(freshTasks);
+      if (isMounted) setTasks(freshTasks);
     };
 
     window.addEventListener('focus', handleFocus);
@@ -53,6 +69,7 @@ export const useTasks = () => {
     });
 
     return () => {
+      isMounted = false;
       if (channel) supabase.removeChannel(channel);
       window.removeEventListener('focus', handleFocus);
     };
@@ -142,7 +159,10 @@ export const useTasks = () => {
   };
 
   const deleteTask = (id) => {
-    persistTasks(tasks.filter((t) => t.id !== id));
+    // 1. 즉각적인 UI 반영 (낙관적 업데이트)
+    setTasks(tasks.filter((t) => t.id !== id));
+    // 2. DB 및 로컬 저장소에서 명시적 삭제
+    deleteTaskDB(id);
   };
 
   const resetAllTasks = async () => {
