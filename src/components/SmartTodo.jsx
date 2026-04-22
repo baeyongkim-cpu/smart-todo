@@ -1,70 +1,40 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Plus, Check, Trash2, Clock, Zap, Home, Calendar as CalendarIcon, Star, Repeat, Timer, BarChart, ChevronLeft, ChevronRight, Settings, Palette, Type, Heart, Smile, Coffee, Target, Lightbulb, LogOut, CalendarX } from "lucide-react";
+import { Plus, Check, Trash2, Clock, Zap, Home, Calendar as CalendarIcon, Star, Repeat, Timer, BarChart, ChevronLeft, ChevronRight, Settings, Palette, Type, Heart, Smile, Coffee, Target, Lightbulb, LogOut, CalendarX, Briefcase, User, Globe } from "lucide-react";
 import { supabase } from "../utils/db";
 import { cn } from "../lib/utils";
 import { useTasks } from "../hooks/useTasks";
 import { startOfDay, addDays, subDays, isSameDay, format, startOfMonth, endOfMonth, eachDayOfInterval, endOfWeek, startOfWeek } from "date-fns";
 import { ko } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 const categoryConfig = {
-  home: { icon: Home, label: "홈", color: "from-cyan-500 to-teal-500" },
-  work: { icon: Zap, label: "업무", color: "from-violet-500 to-purple-500" },
-  personal: { icon: Star, label: "개인", color: "from-amber-500 to-orange-500" },
+  home: { icon: Home, label: "category_home", color: "from-cyan-500 to-teal-500" },
+  work: { icon: Briefcase, label: "category_work", color: "from-indigo-500 to-purple-500" },
+  personal: { icon: User, label: "category_personal", color: "from-rose-500 to-orange-500" },
+};
+
+const priorityConfig = {
+  high: { label: "priority_high", color: "text-rose-500", dot: "bg-rose-500" },
+  medium: { label: "priority_medium", color: "text-amber-500", dot: "bg-amber-500" },
+  low: { label: "priority_low", color: "text-emerald-500", dot: "bg-emerald-500" },
 };
 
 const iconMap = {
   Zap, Home, Star, Target, Coffee
 };
 
-const quotes = [
-  "오늘의 노력이 내일의 당신을 만듭니다.",
-  "작은 습관이 큰 변화를 가져옵니다.",
-  "할 수 있다고 믿는 순간 이미 반은 온 것입니다.",
-  "어제보다 나은 오늘을 위해 한 걸음만 더.",
-  "목표는 크게 잡고, 시작은 작게 하세요.",
-  "당신은 생각보다 훨씬 더 강한 사람입니다.",
-  "포기하지 마세요, 가장 좋은 순간은 아직 오지 않았습니다.",
-  "성공은 매일 반복되는 작은 노력의 합계입니다.",
-  "오늘은 어제 꿈꿨던 내일입니다. 힘내세요!",
-  "한 번에 하나씩, 꾸준함이 정답입니다.",
-  "당신의 열정이 미래를 밝힙니다.",
-  "지금 이 순간이 가장 소중한 기회입니다.",
-  "실패는 성공으로 가는 과정일 뿐입니다.",
-  "꾸준함은 모든 것을 이겨냅니다.",
-  "내일을 위한 최고의 준비는 오늘 최선을 다하는 것입니다.",
-  "당신만의 속도로 가세요, 멈추지 않는 게 중요합니다.",
-  "어려움 속에도 항상 기회는 숨어 있습니다.",
-  "자신을 믿는 것부터가 성공의 시작입니다.",
-  "모든 위대한 일은 아주 작은 시작에서 비롯됩니다.",
-  "오늘 하루도 당신이 주인공입니다.",
-  "끝까지 해내는 마음이 성취를 만듭니다.",
-  "당신의 미소가 세상을 더 밝게 만듭니다.",
-  "매일 조금씩 성장하는 즐거움을 느껴보세요.",
-  "긍정적인 생각이 긍정적인 하루를 만듭니다.",
-  "도전하는 당신의 모습이 가장 아름답습니다.",
-  "꿈을 향한 열정을 잊지 마세요.",
-  "오늘은 당신에게 가장 특별한 날이 될 거예요.",
-  "스스로를 응원해 주세요, 당신은 잘하고 있습니다.",
-  "함께라면 더 멀리 갈 수 있습니다.",
-  "당신이 원하는 미래는 지금 여기서 시작됩니다.",
-  "할 수 있습니다, 바로 지금 시작하세요!"
-];
-
-const priorityConfig = {
-  low: { label: "낮음", dot: "bg-emerald-500" },
-  medium: { label: "보통", dot: "bg-amber-500" },
-  high: { label: "높음", dot: "bg-rose-500" },
-};
+// Quotes moved to i18n.js
 
 export function SmartTodo() {
+  const { t, i18n } = useTranslation();
   const { tasks, loading, addTask, updateTask, toggleTask, deleteTask, resetAllTasks, resetRepeatingTask, resetAllIncompleteTasks, resetAllRepeatingIncompleteTasks, repeatingTaskGroups } = useTasks();
 
   const [activeTab, setActiveTab] = useState("home"); // 'home' | 'stats'
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsView, setSettingsView] = useState('main'); // 'main' or 'reset'
+  const [settingsView, setSettingsView] = useState('main'); // 'main', 'reset', 'language'
   const [confirmState, setConfirmState] = useState(null); // { title: string, message: string, action: function }
 
   const [settings, setSettings] = useState(() => {
@@ -92,9 +62,11 @@ export function SmartTodo() {
   const [completeModalState, setCompleteModalState] = useState({ isOpen: false, task: null, duration: 30 });
 
   const quote = useMemo(() => {
+    const quotesList = t('quotes', { returnObjects: true });
+    if (!Array.isArray(quotesList)) return "";
     const date = new Date().getDate();
-    return quotes[(date - 1) % quotes.length];
-  }, []);
+    return quotesList[(date - 1) % quotesList.length];
+  }, [t]);
 
   const handleAddTodo = () => {
     if (!newTodo.trim()) return;
@@ -198,19 +170,19 @@ export function SmartTodo() {
   };
 
   const formatRepeatLabel = (repeatStr) => {
-    if (!repeatStr || repeatStr === 'none') return '반복 안함';
-    if (repeatStr === 'daily') return '매일';
-    if (repeatStr === 'weekdays') return '평일';
-    if (repeatStr === 'weekly') return '매주';
+    if (!repeatStr || repeatStr === 'none') return t('repeat_none');
+    if (repeatStr === 'daily') return t('repeat_daily');
+    if (repeatStr === 'weekdays') return t('repeat_weekdays');
+    if (repeatStr === 'weekly') return t('repeat_weekly');
     if (repeatStr.startsWith('days:')) {
       const days = repeatStr.split(':')[1].split(',').map(Number);
-      const names = ['일','월','화','수','목','금','토'];
-      return days.map(d => names[d]).join(',') + ' 반복';
+      const names = t('days_short', { returnObjects: true });
+      return days.map(d => names[d]).join(',') + ' ' + t('repeat_days_suffix');
     }
     if (repeatStr.startsWith('monthly:')) {
-      return `매월 ${repeatStr.split(':')[1]}일`;
+      return t('repeat_monthly', { day: repeatStr.split(':')[1] });
     }
-    return '반복 설정됨';
+    return t('repeat_set');
   };
 
   return (
@@ -235,7 +207,7 @@ export function SmartTodo() {
               <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-background animate-pulse" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground tracking-tight">{settings.appTitle}</h1>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">{settings.appTitle || t('app_title')}</h1>
               <p className="text-sm text-muted-foreground italic">"{quote}"</p>
             </div>
           </div>
@@ -252,13 +224,13 @@ export function SmartTodo() {
                 onClick={() => setActiveTab("home")}
                 className={cn("px-4 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5", activeTab === "home" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
               >
-                <Check className="h-3 w-3" /> 작업
+                <Check className="h-3 w-3" /> {t('tasks')}
               </button>
               <button 
                 onClick={() => setActiveTab("stats")}
                 className={cn("px-4 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5", activeTab === "stats" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
               >
-                <BarChart className="h-3 w-3" /> 결과 통계
+                <BarChart className="h-3 w-3" /> {t('stats')}
               </button>
             </div>
           </div>
@@ -305,7 +277,7 @@ export function SmartTodo() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                  <span className="text-sm font-medium text-muted-foreground">오늘의 달성도</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t('progress')}</span>
                 </div>
                 <span className="text-sm font-bold text-foreground">
                   {completedCount}/{totalCount} ({Math.round(progressPercent)}%)
@@ -356,7 +328,7 @@ export function SmartTodo() {
                   value={newTodo}
                   onChange={(e) => setNewTodo(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAddTodo()}
-                  placeholder="새로운 할 일을 입력하세요..."
+                  placeholder={t('placeholder_new_todo')}
                   className="w-full bg-background border-2 border-border/70 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all shadow-inner"
                 />
               </div>
@@ -365,7 +337,7 @@ export function SmartTodo() {
               <div className="flex flex-col gap-4 mt-4 pt-4 border-t border-border/50">
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1 min-w-[140px]">
-                    <span className="text-xs text-muted-foreground mb-2 block">카테고리</span>
+                    <span className="text-xs text-muted-foreground mb-2 block">{t('category')}</span>
                     <div className="flex gap-2">
                       {Object.keys(categoryConfig).map((cat) => {
                         const config = categoryConfig[cat];
@@ -382,53 +354,27 @@ export function SmartTodo() {
                             )}
                           >
                             <Icon className="h-3.5 w-3.5" />
-                            {config.label}
+                            {t(config.label)}
                           </button>
                         );
                       })}
                     </div>
                   </div>
                   <div className="flex-1 min-w-[140px]">
-                    <span className="text-xs text-muted-foreground mb-2 block">우선순위</span>
-                    <div className="flex gap-2">
-                      {Object.keys(priorityConfig).map((pri) => {
-                        const config = priorityConfig[pri];
-                        return (
-                          <button
-                            key={pri}
-                            onClick={() => setSelectedPriority(pri)}
-                            className={cn(
-                              "flex-1 px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all duration-200 border",
-                              selectedPriority === pri
-                                ? "bg-foreground text-background border-transparent"
-                                : "bg-background border-border/70 text-muted-foreground hover:text-foreground hover:border-primary/50"
-                            )}
-                          >
-                            <span className={cn("h-2 w-2 rounded-full", config.dot)} />
-                            {config.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1 min-w-[140px]">
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2"><Timer className="h-3 w-3"/> 소요시간</span>
+                    <span className="text-xs text-muted-foreground mb-2 block">{t('duration')}</span>
                     <select
                       value={selectedDuration}
                       onChange={(e) => setSelectedDuration(e.target.value)}
                       className="bg-background border border-border/70 rounded-xl px-3 py-2 text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm w-full"
                     >
-                      <option value={15}>15분</option>
-                      <option value={30}>30분</option>
-                      <option value={60}>1시간</option>
-                      <option value={120}>2시간</option>
+                      <option value={15}>15{t('minutes')}</option>
+                      <option value={30}>30{t('minutes')}</option>
+                      <option value={60}>1{t('hours')}</option>
+                      <option value={120}>2{t('hours')}</option>
                     </select>
                   </div>
                   <div className="flex-1 min-w-[140px]">
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2"><Repeat className="h-3 w-3"/> 반복 규칙</span>
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2"><Repeat className="h-3 w-3"/> {t('repeat')}</span>
                     <button
                       onClick={() => openRepeatModalFor('new')}
                       className="bg-background border border-border/70 rounded-xl px-3 py-2 text-xs font-medium flex items-center justify-center gap-2 hover:bg-secondary w-full transition-colors shadow-sm text-foreground"
@@ -444,7 +390,7 @@ export function SmartTodo() {
                   className="mt-2 w-full h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center gap-2 text-white font-bold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <Plus className="h-5 w-5" />
-                  일정 추가하기
+                  {t('add_button')}
                 </button>
               </div>
             </div>
@@ -457,7 +403,7 @@ export function SmartTodo() {
                     <Check className="h-8 w-8 text-muted-foreground" />
                   </div>
                   <p className="text-muted-foreground">
-                    예정된 할 일이 없습니다. 휴식을 취하세요!
+                    {t('no_tasks')}
                   </p>
                 </div>
               ) : (
@@ -524,7 +470,7 @@ export function SmartTodo() {
                               {(todo.duration !== undefined) && (
                                 <span className="flex items-center gap-1 text-[10px] font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 rounded-md px-2 py-0.5 shrink-0">
                                   <Timer className="h-3 w-3" />
-                                  {todo.duration}분
+                                  {todo.duration}{t('unit_min')}
                                 </span>
                               )}
                               {todo.repeat && todo.repeat !== 'none' && (
@@ -546,12 +492,12 @@ export function SmartTodo() {
                               value={todo.duration || 30}
                               onChange={(e) => updateTask(todo.id, { duration: parseInt(e.target.value) })}
                               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                              title="소요시간 설정 변경"
+                              title={t('title_duration_change')}
                             >
-                              <option value={15}>15분</option>
-                              <option value={30}>30분</option>
-                              <option value={60}>1시간</option>
-                              <option value={120}>2시간</option>
+                              <option value={15}>15{t('unit_min')}</option>
+                              <option value={30}>30{t('unit_min')}</option>
+                              <option value={60}>1{t('unit_hour')}</option>
+                              <option value={120}>2{t('unit_hour')}</option>
                             </select>
                             <button className="h-8 w-8 rounded-lg border border-border/70 bg-background flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200 shadow-sm">
                               <Timer className="h-4 w-4" />
@@ -561,7 +507,7 @@ export function SmartTodo() {
                           {/* Repeat Edit Button */}
                           <button 
                             onClick={() => openRepeatModalFor(todo.id)}
-                            title="반복 설정 변경"
+                            title={t('title_repeat_change')}
                             className="h-8 w-8 rounded-lg border border-border/70 bg-background flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200 shadow-sm"
                           >
                             <Repeat className="h-4 w-4" />
@@ -604,7 +550,7 @@ export function SmartTodo() {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                   <Settings className="h-5 w-5 text-primary" />
-                  <h3 className="text-xl font-bold text-foreground">앱 커스터마이징</h3>
+                  <h3 className="text-xl font-bold text-foreground">{t('title_app_custom')}</h3>
                 </div>
                 <button onClick={() => setIsSettingsOpen(false)} className="h-8 w-8 rounded-full hover:bg-secondary flex items-center justify-center text-muted-foreground">
                   <Plus className="h-5 w-5 rotate-45" />
@@ -639,7 +585,7 @@ export function SmartTodo() {
                               }}
                               className="flex-1 py-2.5 rounded-xl bg-secondary text-foreground text-sm font-bold hover:bg-secondary/80 transition-all"
                             >
-                              취소
+                              {t('btn_cancel')}
                             </button>
                             <button 
                               type="button"
@@ -658,7 +604,7 @@ export function SmartTodo() {
                               }}
                               className="flex-1 py-2.5 rounded-xl bg-destructive text-destructive-foreground text-sm font-bold hover:opacity-90 transition-opacity"
                             >
-                              확인
+                              {t('btn_confirm')}
                             </button>
                          </div>
                        </div>
@@ -669,9 +615,38 @@ export function SmartTodo() {
                  <div className="h-full space-y-6 overflow-y-auto pr-2 pb-4 scrollbar-thin">
                  {settingsView === 'main' ? (
                    <>
+                     {/* Language Selection Section */}
+                     <div>
+                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">{t('language')}</label>
+                       <div className="grid grid-cols-3 gap-2">
+                         {[
+                           { code: 'ko', flag: '🇰🇷' },
+                           { code: 'en', flag: '🇺🇸' },
+                           { code: 'ja', flag: '🇯🇵' },
+                           { code: 'zh', flag: '🇨🇳' },
+                           { code: 'es', flag: '🇪🇸' },
+                           { code: 'ru', flag: '🇷🇺' }
+                         ].map((lang) => (
+                           <button
+                             key={lang.code}
+                             onClick={() => i18n.changeLanguage(lang.code)}
+                             className={cn(
+                               "flex flex-col items-center justify-center p-2 rounded-xl border transition-all",
+                               i18n.language.startsWith(lang.code) 
+                                 ? "bg-primary/10 border-primary shadow-sm" 
+                                 : "bg-secondary/30 border-border/50 hover:border-primary/30"
+                             )}
+                           >
+                             <span className="text-lg">{lang.flag}</span>
+                             <span className="text-[10px] font-bold mt-1 text-foreground">{lang.code.toUpperCase()}</span>
+                           </button>
+                         ))}
+                       </div>
+                     </div>
+
                      {/* Title Setting */}
                      <div>
-                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">앱 이름 변경</label>
+                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">{t('change_app_name')}</label>
                        <div className="flex gap-2">
                          <div className="relative flex-1">
                            <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -681,7 +656,7 @@ export function SmartTodo() {
                              maxLength={20}
                              onChange={(e) => setSettings({...settings, appTitle: e.target.value.slice(0, 20)})}
                              className="w-full bg-secondary/50 border border-border/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/50"
-                             placeholder="앱 이름을 입력하세요 (최대 20자)"
+                             placeholder={t('placeholder_app_name')}
                            />
                          </div>
                        </div>
@@ -689,7 +664,7 @@ export function SmartTodo() {
 
                      {/* Icon & Accent Setting */}
                      <div>
-                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 block">메인 아이콘 및 강조 색상</label>
+                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 block">{t('app_custom')}</label>
                        <div className="space-y-4 bg-secondary/20 p-4 rounded-2xl border border-border/50">
                           <div className="grid grid-cols-5 gap-2">
                             {Object.keys(iconMap).map(iconName => {
@@ -728,7 +703,7 @@ export function SmartTodo() {
 
                      {/* Background Color Setting */}
                      <div>
-                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 block">배경 테마 선택</label>
+                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 block">{t('theme_select')}</label>
                        <div className="grid grid-cols-2 gap-3">
                          {[
                            { name: 'OLED Black', value: 'linear-gradient(to bottom, #000000, #09090b)' },
@@ -757,7 +732,7 @@ export function SmartTodo() {
                           onClick={() => setSettingsView('reset')}
                           className="w-full py-3 rounded-xl bg-secondary/50 text-foreground text-sm font-bold hover:bg-secondary transition-all flex items-center justify-center gap-2"
                         >
-                          <Trash2 className="h-4 w-4 text-rose-500" /> 데이터 초기화 및 관리
+                          <Trash2 className="h-4 w-4 text-rose-500" /> {t('reset_data')}
                         </button>
                      </div>
                    </>
@@ -767,7 +742,7 @@ export function SmartTodo() {
                         <button onClick={() => setSettingsView('main')} className="p-2 hover:bg-secondary rounded-lg transition-colors">
                           <ChevronLeft className="h-4 w-4" />
                         </button>
-                        <h4 className="font-bold">데이터 초기화 및 관리</h4>
+                        <h4 className="font-bold">{t('reset_data')}</h4>
                       </div>
 
                       <div className="space-y-3">
@@ -775,8 +750,8 @@ export function SmartTodo() {
                          <button 
                            onClick={() => {
                              setConfirmState({
-                               title: "전체 초기화",
-                               message: "주의: 모든 업무 기록과 통계가 영구적으로 삭제됩니다. 계속하시겠습니까?",
+                               title: t('reset_all_title'),
+                               message: t('reset_all_msg'),
                                action: resetAllTasks,
                                shouldGoBack: true
                              });
@@ -784,18 +759,18 @@ export function SmartTodo() {
                            className="w-full p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-left hover:bg-destructive/20 transition-all group"
                          >
                            <div className="flex items-center justify-between mb-1">
-                             <span className="text-sm font-bold text-destructive">1. 전체 초기화</span>
+                             <span className="text-sm font-bold text-destructive">1. {t('reset_all_title')}</span>
                              <Trash2 className="h-4 w-4 text-destructive opacity-50 group-hover:opacity-100" />
                            </div>
-                           <p className="text-[11px] text-muted-foreground">앱의 모든 데이터를 삭제하고 처음 상태로 되돌립니다.</p>
+                           <p className="text-[11px] text-muted-foreground">{t('reset_all_msg')}</p>
                          </button>
 
                          {/* 2. 미완료 초기화 */}
                          <button 
                            onClick={() => {
                              setConfirmState({
-                               title: "미완료 업무 초기화",
-                               message: "완료되지 않은 모든 일정(일반+반복)을 삭제하시겠습니까? 완료 기록은 보존됩니다.",
+                               title: t('reset_incomplete_title'),
+                               message: t('reset_incomplete_msg'),
                                action: resetAllIncompleteTasks,
                                shouldGoBack: true
                              });
@@ -803,18 +778,18 @@ export function SmartTodo() {
                            className="w-full p-4 rounded-2xl bg-secondary/30 border border-border/50 text-left hover:bg-secondary/50 transition-all group"
                          >
                            <div className="flex items-center justify-between mb-1">
-                             <span className="text-sm font-bold text-foreground">2. 모든 미완료 초기화</span>
+                             <span className="text-sm font-bold text-foreground">2. {t('reset_incomplete_title')}</span>
                              <CalendarX className="h-4 w-4 text-muted-foreground opacity-50 group-hover:opacity-100" />
                            </div>
-                           <p className="text-[11px] text-muted-foreground">앞으로 해야 할 모든 미완료 일정을 삭제하고 완료 기록은 유지합니다.</p>
+                           <p className="text-[11px] text-muted-foreground">{t('reset_incomplete_msg')}</p>
                          </button>
 
                          {/* 3. 반복업무 미완료 초기화 */}
                          <button 
                            onClick={() => {
                              setConfirmState({
-                               title: "반복 업무 일괄 초기화",
-                               message: "모든 반복 업무의 향후 일정을 삭제하고 규칙을 제거하시겠습니까? 완료 기록은 일반 기록으로 전환됩니다.",
+                               title: t('reset_repeating_title'),
+                               message: t('reset_repeating_msg'),
                                action: resetAllRepeatingIncompleteTasks,
                                shouldGoBack: true
                              });
@@ -822,37 +797,37 @@ export function SmartTodo() {
                            className="w-full p-4 rounded-2xl bg-secondary/30 border border-border/50 text-left hover:bg-secondary/50 transition-all group"
                          >
                            <div className="flex items-center justify-between mb-1">
-                             <span className="text-sm font-bold text-foreground">3. 반복업무 미완료 초기화</span>
+                             <span className="text-sm font-bold text-foreground">3. {t('reset_repeating_title')}</span>
                              <Repeat className="h-4 w-4 text-muted-foreground opacity-50 group-hover:opacity-100" />
                            </div>
-                           <p className="text-[11px] text-muted-foreground">반복 업무의 미완료분만 삭제하고, 규칙을 없애 일반 기록으로 보관합니다.</p>
+                           <p className="text-[11px] text-muted-foreground">{t('reset_repeating_msg')}</p>
                          </button>
 
                         <div className="pt-4 mt-2 border-t border-border/50">
-                          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 block">반복 업무 개별 관리</label>
+                          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 block">{t('active_repeating_tasks')}</label>
                           <div className="space-y-2">
                             {repeatingTaskGroups.length === 0 ? (
-                              <p className="text-[11px] text-center py-4 text-muted-foreground">활성 반복 업무가 없습니다.</p>
+                              <p className="text-[11px] text-center py-4 text-muted-foreground">{t('no_active_repeating')}</p>
                             ) : (
                               repeatingTaskGroups.map(group => (
                                 <div key={group.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 border border-border/50">
                                   <div className="min-w-0 flex-1 mr-2">
                                     <div className="text-sm font-medium truncate">{group.text}</div>
                                     <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                      <Repeat className="h-3 w-3" /> {formatRepeatLabel(group.repeat)} · 미완료 {group.uncompletedCount}건
+                                      <Repeat className="h-3 w-3" /> {formatRepeatLabel(group.repeat)} · {t('uncompleted_count', { count: group.uncompletedCount })}
                                     </div>
                                   </div>
                                   <button 
                                     onClick={() => {
                                       setConfirmState({
-                                        title: "반복 업무 초기화",
-                                        message: `'${group.text}'의 향후 일정을 초기화하시겠습니까?`,
+                                        title: t('reset_repeating_task_title'),
+                                        message: t('reset_repeating_task_msg', { text: group.text }),
                                         action: () => resetRepeatingTask(group.id)
                                       });
                                     }}
                                     className="px-3 py-1.5 rounded-lg bg-secondary text-foreground text-xs font-bold hover:bg-destructive hover:text-destructive-foreground transition-all"
                                   >
-                                    초기화
+                                    {t('btn_reset')}
                                   </button>
                                 </div>
                               ))
@@ -870,7 +845,7 @@ export function SmartTodo() {
                    onClick={handleLogout}
                    className="flex-1 py-3 rounded-xl bg-destructive/10 text-destructive border border-destructive/20 font-bold hover:bg-destructive/20 transition-all flex items-center justify-center gap-2"
                  >
-                   <LogOut className="h-4 w-4" /> 로그아웃
+                   <LogOut className="h-4 w-4" /> {t('btn_logout')}
                  </button>
                  <button
                    onClick={() => {
@@ -879,7 +854,7 @@ export function SmartTodo() {
                    }}
                    className="flex-[2] py-3 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg hover:opacity-90 transition-opacity"
                  >
-                   설정 완료
+                   {t('btn_settings_done')}
                  </button>
                </div>
             </motion.div>
@@ -893,31 +868,31 @@ export function SmartTodo() {
            <div className="bg-card w-full max-w-sm rounded-2xl border border-border/50 shadow-2xl p-6 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-primary" />
               <h3 className="text-lg font-bold mb-4 text-foreground flex items-center gap-2">
-                 <Repeat className="h-5 w-5 text-primary" /> 반복 규칙 설정
+                 <Repeat className="h-5 w-5 text-primary" /> {t('title_repeat_settings')}
               </h3>
               
               <div className="space-y-4">
                  <div>
-                    <label className="text-xs text-muted-foreground mb-2 block">반복 패턴</label>
+                    <label className="text-xs text-muted-foreground mb-2 block">{t('label_repeat_pattern')}</label>
                     <select 
                        value={repeatModalState.type}
                        onChange={(e) => setRepeatModalState({...repeatModalState, type: e.target.value})}
                        className="w-full bg-secondary border border-border/50 rounded-xl px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/50"
                     >
-                       <option value="none">반복 안함 (1회성)</option>
-                       <option value="daily">매일</option>
-                       <option value="weekdays">평일 (월~금)</option>
-                       <option value="weekly">매주</option>
-                       <option value="days">특정 요일 지정</option>
-                       <option value="monthly">특정 날짜 지정 (매월)</option>
+                       <option value="none">{t('option_none_once')}</option>
+                       <option value="daily">{t('repeat_daily')}</option>
+                       <option value="weekdays">{t('repeat_weekdays')}</option>
+                       <option value="weekly">{t('repeat_weekly')}</option>
+                       <option value="days">{t('option_specific_days')}</option>
+                       <option value="monthly">{t('option_specific_date')}</option>
                     </select>
                  </div>
 
                  {repeatModalState.type === 'days' && (
                    <div className="animate-in slide-in-from-top-2">
-                     <label className="text-xs text-muted-foreground mb-2 block">반복할 요일 선택</label>
+                     <label className="text-xs text-muted-foreground mb-2 block">{t('label_select_days')}</label>
                      <div className="flex gap-1 justify-between">
-                       {['일','월','화','수','목','금','토'].map((dayName, idx) => {
+                       {t('days_short', { returnObjects: true }).map((dayName, idx) => {
                          const currentDays = repeatModalState.payload ? repeatModalState.payload.split(',').map(Number) : [];
                          const isSelected = currentDays.includes(idx);
                          return (
@@ -939,7 +914,7 @@ export function SmartTodo() {
 
                  {repeatModalState.type === 'monthly' && (
                    <div className="animate-in slide-in-from-top-2">
-                     <label className="text-xs text-muted-foreground mb-2 block">반복할 날짜 (매월 N일)</label>
+                     <label className="text-xs text-muted-foreground mb-2 block">{t('label_select_date')}</label>
                      <input 
                         type="number" min="1" max="31"
                         value={repeatModalState.payload || '1'}
@@ -955,13 +930,13 @@ export function SmartTodo() {
                    onClick={() => setRepeatModalState({ ...repeatModalState, isOpen: false })}
                    className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors"
                  >
-                    취소
+                    {t('btn_cancel')}
                  </button>
                  <button 
                    onClick={saveRepeatModal}
                    className="px-6 py-2 rounded-xl text-sm font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity"
                  >
-                    저장하기
+                    {t('btn_save')}
                  </button>
               </div>
            </div>
@@ -974,13 +949,13 @@ export function SmartTodo() {
            <div className="bg-card w-full max-w-sm rounded-2xl border border-border/50 shadow-2xl p-6 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-teal-500" />
               <h3 className="text-lg font-bold mb-2 text-foreground flex items-center gap-2">
-                 <Check className="h-5 w-5 text-primary" /> 업무 완료 기록
+                 <Check className="h-5 w-5 text-primary" /> {t('title_completion_record')}
               </h3>
               <p className="text-sm text-muted-foreground mb-6 line-clamp-1">{completeModalState.task?.text || completeModalState.task?.title}</p>
               
               <div className="space-y-4">
                  <div>
-                    <label className="text-xs text-muted-foreground mb-2 block">실제 소요시간 (분)</label>
+                    <label className="text-xs text-muted-foreground mb-2 block">{t('label_actual_duration')}</label>
                     <input 
                        type="number" min="1" max="1440" step="5"
                        value={completeModalState.duration}
@@ -995,13 +970,13 @@ export function SmartTodo() {
                    onClick={() => setCompleteModalState({ isOpen: false, task: null, duration: 30 })}
                    className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors"
                  >
-                    취소
+                    {t('btn_cancel')}
                  </button>
                  <button 
                    onClick={confirmCompletion}
                    className="px-6 py-2 rounded-xl text-sm font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity"
                  >
-                    완료 확정
+                    {t('btn_complete_confirm')}
                  </button>
               </div>
            </div>
@@ -1021,7 +996,7 @@ export function SmartTodo() {
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary to-cyan-500" />
               
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-foreground">날짜 선택</h3>
+                <h3 className="text-xl font-bold text-foreground">{t('title_select_date')}</h3>
                 <button 
                   onClick={() => setIsCalendarOpen(false)}
                   className="h-8 w-8 rounded-full hover:bg-secondary flex items-center justify-center text-muted-foreground transition-colors"
@@ -1059,11 +1034,15 @@ function CalendarPicker({ selectedDate, onSelect }) {
   const prevMonth = () => setCurrentMonth(prev => subDays(startOfMonth(prev), 1));
   const nextMonth = () => setCurrentMonth(prev => addDays(endOfMonth(prev), 1));
 
+  const { t, i18n } = useTranslation();
+  const dateLocales = { ko, en: undefined, ja: undefined, zh: undefined, es: undefined, ru: undefined };
+  const currentLocale = dateLocales[i18n.language.split('-')[0]] || undefined;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between px-2">
         <span className="font-bold text-foreground">
-          {format(currentMonth, 'yyyy년 MM월', { locale: ko })}
+          {format(currentMonth, i18n.language.startsWith('ko') ? 'yyyy. MM.' : 'MMMM yyyy', { locale: currentLocale })}
         </span>
         <div className="flex gap-1">
           <button onClick={prevMonth} className="p-2 hover:bg-secondary rounded-lg transition-colors"><ChevronLeft className="h-4 w-4"/></button>
@@ -1072,7 +1051,7 @@ function CalendarPicker({ selectedDate, onSelect }) {
       </div>
 
       <div className="grid grid-cols-7 gap-1">
-        {['일','월','화','수','목','금','토'].map((d, i) => (
+        {t('days_short', { returnObjects: true }).map((d, i) => (
           <div key={d} className={cn("text-center text-[10px] font-bold py-2", i === 0 ? "text-rose-500" : i === 6 ? "text-cyan-500" : "text-muted-foreground")}>
             {d}
           </div>
@@ -1139,8 +1118,8 @@ function StatisticsView({ tasks, toggleTask }) {
         total,
         completed,
         percent,
-        label: new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric' }).format(d),
-        dayName: new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(d)
+        label: new Intl.DateTimeFormat(i18n.language, { month: 'numeric', day: 'numeric' }).format(d),
+        dayName: new Intl.DateTimeFormat(i18n.language, { weekday: 'short' }).format(d)
       });
     }
     return days;
@@ -1167,17 +1146,17 @@ function StatisticsView({ tasks, toggleTask }) {
     <div className="animate-in fade-in duration-500">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-xl">
-           <h3 className="text-sm text-muted-foreground mb-1">전체 누적 달성률</h3>
+           <h3 className="text-sm text-muted-foreground mb-1">{t('stats_total_progress')}</h3>
            <div className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-primary">
              {globalCompletion}%
            </div>
-           <p className="text-xs text-muted-foreground mt-2">총 {totalValidTasks}개의 기록된 할 일 중</p>
+           <p className="text-xs text-muted-foreground mt-2">{t('total_tasks_prefix', { count: totalValidTasks, defaultValue: `Total ${totalValidTasks} recorded tasks` })}</p>
         </div>
         <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-xl flex items-center justify-between">
            <div>
-             <h3 className="text-sm text-muted-foreground mb-1">총 완료 건수</h3>
+             <h3 className="text-sm text-muted-foreground mb-1">{t('stats_total_completed')}</h3>
              <div className="text-4xl font-bold text-foreground">
-               {totalCompleted} <span className="text-2xl text-muted-foreground font-normal">건</span>
+               {totalCompleted} <span className="text-2xl text-muted-foreground font-normal">{t('stats_count_unit')}</span>
              </div>
            </div>
            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -1189,22 +1168,22 @@ function StatisticsView({ tasks, toggleTask }) {
       <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-xl">
          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
            <h3 className="font-bold text-foreground flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4 text-primary" /> 달성 기록
+              <CalendarIcon className="h-4 w-4 text-primary" /> {t('stats_record_title')}
            </h3>
            <select 
              value={timeframe} 
              onChange={(e) => setTimeframe(Number(e.target.value))}
              className="bg-secondary/50 border border-border/50 text-foreground text-xs rounded-lg px-3 py-1.5 focus:ring-1 focus:ring-primary/50 outline-none cursor-pointer"
            >
-             <option value={7}>최근 7일 + 향후 7일</option>
-             <option value={14}>최근 14일 + 향후 7일</option>
-             <option value={30}>최근 한 달 + 향후 7일</option>
+             <option value={7}>{t('stats_7days')}</option>
+             <option value={14}>{t('stats_14days')}</option>
+             <option value={30}>{t('stats_30days')}</option>
            </select>
          </div>
          
          {/* Grid View similar to GitHub contributions */}
          <div className="grid grid-cols-7 gap-2 mb-4">
-           {['일','월','화','수','목','금','토'].map(d => (
+           {t('days_short', { returnObjects: true }).map(d => (
              <div key={d} className="text-center text-[10px] text-muted-foreground font-medium">{d}</div>
            ))}
            {/* Pad empty cells for the aligning days */}
@@ -1246,10 +1225,10 @@ function StatisticsView({ tasks, toggleTask }) {
                         <div key={t.id} className="truncate">✓ {t.text || t.title}</div>
                       ))
                     ) : (
-                      <div className="text-background/60 italic">완료 내역 없음</div>
+                      <div className="text-background/60 italic">{t('stats_no_records')}</div>
                     )}
                     {day.tasks.filter(t => t.completed).length > 3 && (
-                      <div className="text-background/50 text-[10px] text-center mt-1">외 {day.tasks.filter(t => t.completed).length - 3}건... (클릭하여 보기)</div>
+                      <div className="text-background/50 text-[10px] text-center mt-1">{t('stats_more_items', { count: day.tasks.filter(t => t.completed).length - 3 })}</div>
                     )}
                   </div>
                 </div>
@@ -1262,15 +1241,15 @@ function StatisticsView({ tasks, toggleTask }) {
            <div className="mt-8 pt-6 border-t border-border/50 animate-in slide-in-from-bottom-4">
              <div className="flex items-center justify-between mb-4">
                 <h4 className="font-bold text-foreground">
-                  {new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'long' }).format(selectedDate)} 스코어보드
+                  {new Intl.DateTimeFormat(i18n.language, { month: 'numeric', day: 'numeric', weekday: 'long' }).format(selectedDate)} {t('stats_scoreboard')}
                 </h4>
-                <button onClick={() => setSelectedDate(null)} className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 bg-secondary rounded-md">닫기</button>
+                <button onClick={() => setSelectedDate(null)} className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 bg-secondary rounded-md">{t('stats_close')}</button>
              </div>
              <div className="space-y-3">
                {(() => {
                   const targetDay = stats.find(s => isSameDay(s.date, selectedDate));
                   if (!targetDay || targetDay.tasks.filter(t => t.completed).length === 0) {
-                     return <div className="text-center py-8 text-muted-foreground bg-secondary/30 rounded-xl">해당 일자의 완료 기록이 없습니다.</div>;
+                     return <div className="text-center py-8 text-muted-foreground bg-secondary/30 rounded-xl">{t('stats_no_records_day')}</div>;
                   }
                   
                   return targetDay.tasks.filter(t => t.completed).map(todo => {
@@ -1283,12 +1262,12 @@ function StatisticsView({ tasks, toggleTask }) {
                            
                            // If completed on a different day than scheduled, show original date
                            if (!isSameDay(startOfDay(completeDate), startOfDay(scheduledDate))) {
-                              const diffDays = Math.round((startOfDay(completeDate) - startOfDay(scheduledDate)) / (1000 * 60 * 60 * 24));
-                              const statusText = diffDays < 0 ? `${Math.abs(diffDays)}일 일찍` : `${diffDays}일 늦게`;
-                              timeStr = `(${statusText}) `;
+                               const diffDays = Math.round((startOfDay(completeDate) - startOfDay(scheduledDate)) / (1000 * 60 * 60 * 24));
+                               const statusText = diffDays < 0 ? t('stats_early', { days: Math.abs(diffDays) }) : t('stats_late', { days: diffDays });
+                               timeStr = `(${statusText}) `;
                            }
                            
-                           timeStr += new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: 'numeric' }).format(completeDate);
+                           timeStr += new Intl.DateTimeFormat(i18n.language, { hour: 'numeric', minute: 'numeric' }).format(completeDate);
                         } catch(e){}
                      }
 
@@ -1296,7 +1275,7 @@ function StatisticsView({ tasks, toggleTask }) {
                         <div key={todo.id} className="group flex items-start gap-4 p-4 rounded-xl border border-border/50 bg-card/50 hover:bg-secondary/50 transition-colors">
                            <button
                              onClick={() => toggleTask(todo.id)}
-                             title="작업 탭으로 되돌리기"
+                             title={t('return_to_tasks')}
                              className="mt-0.5 h-6 w-6 rounded border border-border flex items-center justify-center transition-all bg-primary/20 hover:bg-destructive/20 hover:border-destructive text-primary hover:text-destructive shrink-0"
                            >
                              <Check className="h-4 w-4 group-hover:hidden" />
@@ -1305,8 +1284,8 @@ function StatisticsView({ tasks, toggleTask }) {
                            <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-foreground leading-snug">{todo.text || todo.title}</p>
                               <div className="flex flex-wrap items-center gap-1.5 mt-2 text-[10px] text-muted-foreground">
-                                 {timeStr && <span className="flex items-center gap-1 bg-secondary border border-border/50 px-2 py-0.5 rounded-md"><Clock className="h-3 w-3" /> {timeStr} 완료</span>}
-                                 {todo.duration && <span className="flex items-center gap-1 bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded-md"><Timer className="h-3 w-3" /> {todo.duration}분 예상 소요</span>}
+                                 {timeStr && <span className="flex items-center gap-1 bg-secondary border border-border/50 px-2 py-0.5 rounded-md"><Clock className="h-3 w-3" /> {t('stats_completed_at', { time: timeStr })}</span>}
+                                 {todo.duration && <span className="flex items-center gap-1 bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded-md"><Timer className="h-3 w-3" /> {t('stats_estimated', { min: todo.duration })}</span>}
                               </div>
                            </div>
                         </div>
