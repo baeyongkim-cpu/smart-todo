@@ -1324,7 +1324,27 @@ function StatisticsView({ tasks, toggleTask }) {
                              <Trash2 className="h-4 w-4 hidden group-hover:block" />
                            </button>
                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-foreground leading-snug">{todo.text || todo.title}</p>
+                              <p className="text-sm font-medium text-foreground leading-snug">
+                                {(() => {
+                                  const text = todo.text || todo.title || '';
+                                  const urlRegex = /(https?:\/\/[^\s]+)/g;
+                                  const parts = text.split(urlRegex);
+                                  return parts.map((part, i) => 
+                                    urlRegex.test(part) ? (
+                                      <a 
+                                        key={i} 
+                                        href={part} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="text-primary hover:underline break-all"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        {part}
+                                      </a>
+                                    ) : part
+                                  );
+                                })()}
+                              </p>
                               <div className="flex flex-wrap items-center gap-1.5 mt-2 text-[10px] text-muted-foreground">
                                  <span className={cn("flex items-center gap-1 px-2 py-0.5 rounded-md text-white whitespace-nowrap bg-gradient-to-r", categoryConfig[todo.category || 'home'].color)}>
                                    {React.createElement(categoryConfig[todo.category || 'home'].icon, { className: "h-3 w-3" })}
