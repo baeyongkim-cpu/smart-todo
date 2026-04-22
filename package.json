@@ -1,7 +1,7 @@
 {
   "name": "to-do-check-app",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.104.0",
     "@tailwindcss/vite": "^4.2.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
