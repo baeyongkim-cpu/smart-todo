@@ -4,7 +4,7 @@ import { supabase } from "../utils/db";
 import { cn } from "../lib/utils";
 import { useTasks } from "../hooks/useTasks";
 import { startOfDay, addDays, subDays, isSameDay, format, startOfMonth, endOfMonth, eachDayOfInterval, endOfWeek, startOfWeek } from "date-fns";
-import { ko } from "date-fns/locale";
+import { ko, enUS } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 
@@ -15,9 +15,9 @@ const categoryConfig = {
 };
 
 const priorityConfig = {
-  high: { label: "priority_high", color: "text-rose-500", dot: "bg-rose-500" },
-  medium: { label: "priority_medium", color: "text-amber-500", dot: "bg-amber-500" },
-  low: { label: "priority_low", color: "text-emerald-500", dot: "bg-emerald-500" },
+  low: { label: "priority_low", color: "from-emerald-500 to-green-500", dot: "bg-emerald-500" },
+  medium: { label: "priority_medium", color: "from-amber-500 to-orange-400", dot: "bg-amber-500" },
+  high: { label: "priority_high", color: "from-rose-500 to-red-600", dot: "bg-rose-500" },
 };
 
 const iconMap = {
@@ -112,7 +112,8 @@ export function SmartTodo() {
   const totalCount = selectedDateTasks.length;
   const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
-  const todayStr = format(selectedDate, 'yyyy. MM. dd. (EEEE)', { locale: ko });
+  const currentLocale = i18n.language.startsWith('en') ? enUS : ko;
+  const todayStr = format(selectedDate, i18n.language.startsWith('en') ? 'EEEE, MMM d, yyyy' : 'yyyy. MM. dd. (EEEE)', { locale: currentLocale });
   const isSelectedToday = isSameDay(selectedDate, startOfDay(new Date()));
   const AppIcon = iconMap[settings.appIcon] || Zap;
 
@@ -334,8 +335,9 @@ export function SmartTodo() {
               </div>
 
               {/* Advanced Settings */}
-              <div className="flex flex-col gap-4 mt-4 pt-4 border-t border-border/50">
-                <div className="flex flex-wrap sm:flex-nowrap items-start gap-4">
+              <div className="flex flex-col gap-6 mt-4 pt-4 border-t border-border/50">
+                <div className="flex flex-wrap items-start gap-x-6 gap-y-4">
+                  {/* Category Selection */}
                   <div className="flex-[1.5] min-w-[180px] w-full">
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2"><Tag className="h-3 w-3"/> {t('category')}</span>
                     <div className="flex gap-2">
@@ -347,25 +349,65 @@ export function SmartTodo() {
                             key={cat}
                             onClick={() => setSelectedCategory(cat)}
                             className={cn(
-                              "flex-1 px-2 py-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1 transition-all duration-200 border whitespace-nowrap",
+                              "flex-1 px-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all duration-200 border whitespace-nowrap h-[42px]",
                               selectedCategory === cat
                                 ? `bg-gradient-to-r ${config.color} text-white shadow-lg border-transparent`
                                 : "bg-background border-border/70 text-muted-foreground hover:text-foreground hover:border-primary/50"
                             )}
                           >
-                            <Icon className="h-3 w-3" />
+                            <Icon className="h-3.5 w-3.5" />
                             {t(config.label)}
                           </button>
                         );
                       })}
                     </div>
                   </div>
-                  <div className="flex-1 min-w-[100px] w-full">
+
+                  {/* Priority Selection */}
+                  <div className="flex-[1.5] min-w-[180px] w-full">
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2"><Zap className="h-3 w-3"/> {t('priority')}</span>
+                    <div className="flex gap-2">
+                      {Object.keys(priorityConfig).map((pri) => {
+                        const config = priorityConfig[pri];
+                        const isSelected = selectedPriority === pri;
+                        return (
+                          <button
+                            key={pri}
+                            onClick={() => setSelectedPriority(pri)}
+                            className={cn(
+                              "flex-1 px-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all duration-300 border relative overflow-hidden h-[42px] whitespace-nowrap",
+                              isSelected
+                                ? `bg-gradient-to-br ${config.color} text-white border-transparent shadow-[0_0_12px_rgba(0,0,0,0.15)] ring-1 ring-white/20 scale-[1.02]`
+                                : "bg-background border-border/70 text-muted-foreground/60 hover:text-foreground hover:border-border"
+                            )}
+                          >
+                            {/* Inner dot with subtle glow when selected */}
+                            <div className={cn(
+                              "h-1.5 w-1.5 rounded-full transition-all duration-300 shrink-0",
+                              isSelected ? "bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]" : config.dot
+                            )} />
+                            <span className="relative z-10">{t(config.label)}</span>
+                            {isSelected && (
+                              <motion.div 
+                                layoutId="pri-active"
+                                className="absolute inset-0 bg-white/10"
+                                initial={false}
+                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Duration Selection */}
+                  <div className="flex-[0.7] min-w-[80px] w-full">
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2"><Timer className="h-3 w-3"/> {t('duration')}</span>
                     <select
                       value={selectedDuration}
                       onChange={(e) => setSelectedDuration(e.target.value)}
-                      className="bg-background border border-border/70 rounded-xl px-3 py-2 text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm w-full h-[34px]"
+                      className="bg-background border border-border/70 rounded-xl px-2.5 text-[11px] font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm w-full h-[42px]"
                     >
                       <option value={15}>15{t('unit_min')}</option>
                       <option value={30}>30{t('unit_min')}</option>
@@ -373,13 +415,15 @@ export function SmartTodo() {
                       <option value={120}>2{t('unit_hour')}</option>
                     </select>
                   </div>
+
+                  {/* Repeat Selection */}
                   <div className="flex-1 min-w-[120px] w-full">
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2"><Repeat className="h-3 w-3"/> {t('repeat')}</span>
                     <button
                       onClick={() => openRepeatModalFor('new')}
-                      className="bg-background border border-border/70 rounded-xl px-3 py-2 text-xs font-medium flex items-center justify-center gap-2 hover:bg-secondary w-full transition-colors shadow-sm text-foreground h-[34px]"
+                      className="bg-background border border-border/70 rounded-xl px-2.5 text-[11px] font-bold flex items-center justify-center gap-1.5 hover:bg-secondary w-full transition-colors shadow-sm text-foreground h-[42px]"
                     >
-                      {formatRepeatLabel(newTodoRepeat)}
+                      <span className="truncate">{formatRepeatLabel(newTodoRepeat)}</span>
                     </button>
                   </div>
                 </div>
@@ -465,7 +509,7 @@ export function SmartTodo() {
                               </span>
                               <span className="flex items-center gap-1 text-[10px] text-muted-foreground bg-background border border-border/50 rounded-md px-2 py-0.5 whitespace-nowrap shadow-sm">
                                 <span className={cn("h-1.5 w-1.5 rounded-full", priConfig.dot)} />
-                                {priConfig.label}
+                                {t(priConfig.label)}
                               </span>
                               {(todo.duration !== undefined) && (
                                 <span className="flex items-center gap-1 text-[10px] font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 rounded-md px-2 py-0.5 whitespace-nowrap">
@@ -615,52 +659,49 @@ export function SmartTodo() {
                  <div className="max-h-[60vh] space-y-6 overflow-y-auto pr-2 pb-4 scrollbar-thin">
                  {settingsView === 'main' ? (
                    <>
-                     {/* Language Selection Section */}
-                     <div>
-                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">{t('language')}</label>
-                       <div className="grid grid-cols-6 gap-1.5">
-                         {[
-                           { code: 'ko', flag: '🇰🇷' },
-                           { code: 'en', flag: '🇺🇸' },
-                           { code: 'ja', flag: '🇯🇵' },
-                           { code: 'zh', flag: '🇨🇳' },
-                           { code: 'es', flag: '🇪🇸' },
-                           { code: 'ru', flag: '🇷🇺' }
-                         ].map((lang) => (
-                           <button
-                             key={lang.code}
-                             onClick={() => i18n.changeLanguage(lang.code)}
-                             className={cn(
-                               "flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all",
-                               i18n.language.startsWith(lang.code) 
-                                 ? "bg-primary/10 border-primary shadow-sm" 
-                                 : "bg-secondary/30 border-border/50 hover:border-primary/30"
-                             )}
-                           >
-                             <span className="text-base">{lang.flag}</span>
-                             <span className="text-[8px] font-bold mt-1 text-foreground">{lang.code.toUpperCase()}</span>
-                           </button>
-                         ))}
-                       </div>
-                     </div>
-
-                     {/* Title Setting */}
-                     <div>
-                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">{t('change_app_name')}</label>
-                       <div className="flex gap-2">
-                         <div className="relative flex-1">
-                           <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                           <input 
-                             type="text"
-                             value={settings.appTitle}
-                             maxLength={20}
-                             onChange={(e) => setSettings({...settings, appTitle: e.target.value.slice(0, 20)})}
-                             className="w-full bg-secondary/50 border border-border/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/50"
-                             placeholder={t('placeholder_app_name')}
-                           />
-                         </div>
-                       </div>
-                     </div>
+                      {/* Title Setting & Language Toggle */}
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">{t('change_app_name')}</label>
+                          <div className="flex flex-col sm:flex-row gap-3">
+                            <div className="relative flex-1">
+                              <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <input 
+                                type="text"
+                                value={settings.appTitle}
+                                maxLength={20}
+                                onChange={(e) => setSettings({...settings, appTitle: e.target.value.slice(0, 20)})}
+                                className="w-full bg-secondary/50 border border-border/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/50"
+                                placeholder={t('placeholder_app_name')}
+                              />
+                            </div>
+                            
+                            {/* Compact Language Toggle */}
+                            <div className="flex items-center bg-secondary/50 border border-border/50 rounded-xl p-1 h-[42px] shrink-0 min-w-[120px]">
+                              {[
+                                { code: 'ko', label: 'KO' },
+                                { code: 'en', label: 'EN' },
+                              ].map((lang) => {
+                                const isActive = i18n.language.startsWith(lang.code);
+                                return (
+                                  <button
+                                    key={lang.code}
+                                    onClick={() => i18n.changeLanguage(lang.code)}
+                                    className={cn(
+                                      "flex-1 h-full rounded-lg text-[11px] font-bold transition-all duration-300 flex items-center justify-center",
+                                      isActive 
+                                        ? "bg-primary text-primary-foreground shadow-sm" 
+                                        : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                  >
+                                    {lang.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 
                      {/* Icon & Accent Setting */}
                      <div>
@@ -1035,8 +1076,7 @@ function CalendarPicker({ selectedDate, onSelect }) {
   const nextMonth = () => setCurrentMonth(prev => addDays(endOfMonth(prev), 1));
 
   const { t, i18n } = useTranslation();
-  const dateLocales = { ko, en: undefined, ja: undefined, zh: undefined, es: undefined, ru: undefined };
-  const currentLocale = dateLocales[i18n.language.split('-')[0]] || undefined;
+  const currentLocale = i18n.language === 'en' ? enUS : ko;
 
   return (
     <div className="space-y-4">
@@ -1120,6 +1160,7 @@ function StatisticsView({ tasks, toggleTask }) {
         completed,
         percent,
         label: new Intl.DateTimeFormat(i18n.language, { month: 'numeric', day: 'numeric' }).format(d),
+        dayNum: format(d, 'd'),
         dayName: new Intl.DateTimeFormat(i18n.language, { weekday: 'short' }).format(d)
       });
     }
@@ -1211,7 +1252,7 @@ function StatisticsView({ tasks, toggleTask }) {
                     />
                     {/* Text overlays */}
                     <div className="absolute inset-x-0 bottom-1 flex items-center justify-center pointer-events-none">
-                       <span className="text-[10px] text-muted-foreground font-medium z-10">{day.label.split('.')[1]}</span>
+                       <span className="text-[10px] text-muted-foreground font-medium z-10">{day.dayNum}</span>
                     </div>
                   </div>
                   
