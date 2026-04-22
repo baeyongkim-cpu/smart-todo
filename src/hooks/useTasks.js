@@ -1,17 +1,48 @@
 import { useState, useEffect, useMemo } from 'react';
 import { isToday, isTomorrow, isBefore, startOfDay, addDays } from 'date-fns';
-import { loadTasks, saveTasks, clearAllTasksDB, clearRepeatingTasksDB, clearAllIncompleteTasksDB } from '../utils/db';
+import { loadTasks, saveTasks, clearAllTasksDB, clearRepeatingTasksDB, clearAllIncompleteTasksDB, supabase } from '../utils/db';
 
 export const useTasks = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // 1. 초기 데이터 로드
     loadTasks().then((savedTasks) => {
-      // Ensure existing tasks have necessary fields or are parsed correctly, mainly handled in component
       setTasks(savedTasks || []);
       setLoading(false);
     });
+
+    // 2. 실시간 동기화 구독 (PC-폰 간 즉시 반영)
+    let channel;
+    const setupRealtime = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      channel = supabase
+        .channel('tasks-realtime-sync')
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // 모든 변화 감지
+            schema: 'public',
+            table: 'tasks',
+            filter: `user_id=eq.${user.id}`
+          },
+          async (payload) => {
+            // 서버에 변화가 생기면 로컬 데이터를 다시 불러와 동기화
+            const freshTasks = await loadTasks();
+            setTasks(freshTasks);
+          }
+        )
+        .subscribe();
+    };
+
+    setupRealtime();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
   const persistTasks = async (newTasks) => {
