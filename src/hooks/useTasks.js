@@ -40,8 +40,21 @@ export const useTasks = () => {
 
     setupRealtime();
 
+    // 3. 화면 포커스 시 자동 새로고침 (실시간 보조)
+    const handleFocus = async () => {
+      console.log('화면 포커스 감지: 데이터 새로고침');
+      const freshTasks = await loadTasks();
+      setTasks(freshTasks);
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') handleFocus();
+    });
+
     return () => {
       if (channel) supabase.removeChannel(channel);
+      window.removeEventListener('focus', handleFocus);
     };
   }, []);
 
