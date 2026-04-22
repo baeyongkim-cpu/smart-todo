@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Plus, Check, Trash2, Clock, Zap, Home, Calendar as CalendarIcon, Star, Repeat, Timer, BarChart, ChevronLeft, ChevronRight, Settings, Palette, Type, Heart, Smile, Coffee, Target, Lightbulb, LogOut, CalendarX, Briefcase, User, Globe } from "lucide-react";
+import { Plus, Check, Trash2, Clock, Zap, Home, Calendar as CalendarIcon, Star, Repeat, Timer, BarChart, ChevronLeft, ChevronRight, Settings, Palette, Type, Heart, Smile, Coffee, Target, Lightbulb, LogOut, CalendarX, Briefcase, User, Globe, Tag } from "lucide-react";
 import { supabase } from "../utils/db";
 import { cn } from "../lib/utils";
 import { useTasks } from "../hooks/useTasks";
@@ -335,9 +335,9 @@ export function SmartTodo() {
 
               {/* Advanced Settings */}
               <div className="flex flex-col gap-4 mt-4 pt-4 border-t border-border/50">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1 min-w-[140px]">
-                    <span className="text-xs text-muted-foreground mb-2 block">{t('category')}</span>
+                <div className="flex flex-wrap sm:flex-nowrap items-start gap-4">
+                  <div className="flex-[1.5] min-w-[180px] w-full">
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2"><Tag className="h-3 w-3"/> {t('category')}</span>
                     <div className="flex gap-2">
                       {Object.keys(categoryConfig).map((cat) => {
                         const config = categoryConfig[cat];
@@ -347,37 +347,37 @@ export function SmartTodo() {
                             key={cat}
                             onClick={() => setSelectedCategory(cat)}
                             className={cn(
-                              "flex-1 px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all duration-200 border",
+                              "flex-1 px-2 py-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1 transition-all duration-200 border whitespace-nowrap",
                               selectedCategory === cat
                                 ? `bg-gradient-to-r ${config.color} text-white shadow-lg border-transparent`
                                 : "bg-background border-border/70 text-muted-foreground hover:text-foreground hover:border-primary/50"
                             )}
                           >
-                            <Icon className="h-3.5 w-3.5" />
+                            <Icon className="h-3 w-3" />
                             {t(config.label)}
                           </button>
                         );
                       })}
                     </div>
                   </div>
-                  <div className="flex-1 min-w-[140px]">
-                    <span className="text-xs text-muted-foreground mb-2 block">{t('duration')}</span>
+                  <div className="flex-1 min-w-[100px] w-full">
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2"><Timer className="h-3 w-3"/> {t('duration')}</span>
                     <select
                       value={selectedDuration}
                       onChange={(e) => setSelectedDuration(e.target.value)}
-                      className="bg-background border border-border/70 rounded-xl px-3 py-2 text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm w-full"
+                      className="bg-background border border-border/70 rounded-xl px-3 py-2 text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm w-full h-[34px]"
                     >
-                      <option value={15}>15{t('minutes')}</option>
-                      <option value={30}>30{t('minutes')}</option>
-                      <option value={60}>1{t('hours')}</option>
-                      <option value={120}>2{t('hours')}</option>
+                      <option value={15}>15{t('unit_min')}</option>
+                      <option value={30}>30{t('unit_min')}</option>
+                      <option value={60}>1{t('unit_hour')}</option>
+                      <option value={120}>2{t('unit_hour')}</option>
                     </select>
                   </div>
-                  <div className="flex-1 min-w-[140px]">
+                  <div className="flex-1 min-w-[120px] w-full">
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2"><Repeat className="h-3 w-3"/> {t('repeat')}</span>
                     <button
                       onClick={() => openRepeatModalFor('new')}
-                      className="bg-background border border-border/70 rounded-xl px-3 py-2 text-xs font-medium flex items-center justify-center gap-2 hover:bg-secondary w-full transition-colors shadow-sm text-foreground"
+                      className="bg-background border border-border/70 rounded-xl px-3 py-2 text-xs font-medium flex items-center justify-center gap-2 hover:bg-secondary w-full transition-colors shadow-sm text-foreground h-[34px]"
                     >
                       {formatRepeatLabel(newTodoRepeat)}
                     </button>
@@ -456,25 +456,25 @@ export function SmartTodo() {
                             <div className="flex flex-wrap items-center gap-1.5 mt-2">
                               <span
                                 className={cn(
-                                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-gradient-to-r text-white shrink-0 shadow-sm",
+                                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-gradient-to-r text-white whitespace-nowrap shadow-sm",
                                   catConfig.color
                                 )}
                               >
                                 <Icon className="h-3 w-3" />
-                                {catConfig.label}
+                                {t(catConfig.label)}
                               </span>
-                              <span className="flex items-center gap-1 text-[10px] text-muted-foreground bg-background border border-border/50 rounded-md px-2 py-0.5 shrink-0 shadow-sm">
+                              <span className="flex items-center gap-1 text-[10px] text-muted-foreground bg-background border border-border/50 rounded-md px-2 py-0.5 whitespace-nowrap shadow-sm">
                                 <span className={cn("h-1.5 w-1.5 rounded-full", priConfig.dot)} />
                                 {priConfig.label}
                               </span>
                               {(todo.duration !== undefined) && (
-                                <span className="flex items-center gap-1 text-[10px] font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 rounded-md px-2 py-0.5 shrink-0">
+                                <span className="flex items-center gap-1 text-[10px] font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 rounded-md px-2 py-0.5 whitespace-nowrap">
                                   <Timer className="h-3 w-3" />
                                   {todo.duration}{t('unit_min')}
                                 </span>
                               )}
                               {todo.repeat && todo.repeat !== 'none' && (
-                                <span className="flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 border border-primary/20 rounded-md px-2 py-0.5 shrink-0">
+                                <span className="flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 border border-primary/20 rounded-md px-2 py-0.5 whitespace-nowrap">
                                   <Repeat className="h-3 w-3" />
                                   {formatRepeatLabel(todo.repeat)}
                                 </span>
@@ -612,13 +612,13 @@ export function SmartTodo() {
                    )}
                  </AnimatePresence>
 
-                 <div className="h-full space-y-6 overflow-y-auto pr-2 pb-4 scrollbar-thin">
+                 <div className="max-h-[60vh] space-y-6 overflow-y-auto pr-2 pb-4 scrollbar-thin">
                  {settingsView === 'main' ? (
                    <>
                      {/* Language Selection Section */}
                      <div>
                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">{t('language')}</label>
-                       <div className="grid grid-cols-3 gap-2">
+                       <div className="grid grid-cols-6 gap-1.5">
                          {[
                            { code: 'ko', flag: '🇰🇷' },
                            { code: 'en', flag: '🇺🇸' },
@@ -631,14 +631,14 @@ export function SmartTodo() {
                              key={lang.code}
                              onClick={() => i18n.changeLanguage(lang.code)}
                              className={cn(
-                               "flex flex-col items-center justify-center p-2 rounded-xl border transition-all",
+                               "flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all",
                                i18n.language.startsWith(lang.code) 
                                  ? "bg-primary/10 border-primary shadow-sm" 
                                  : "bg-secondary/30 border-border/50 hover:border-primary/30"
                              )}
                            >
-                             <span className="text-lg">{lang.flag}</span>
-                             <span className="text-[10px] font-bold mt-1 text-foreground">{lang.code.toUpperCase()}</span>
+                             <span className="text-base">{lang.flag}</span>
+                             <span className="text-[8px] font-bold mt-1 text-foreground">{lang.code.toUpperCase()}</span>
                            </button>
                          ))}
                        </div>
@@ -996,7 +996,7 @@ export function SmartTodo() {
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary to-cyan-500" />
               
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-foreground">{t('title_select_date')}</h3>
+                <div />
                 <button 
                   onClick={() => setIsCalendarOpen(false)}
                   className="h-8 w-8 rounded-full hover:bg-secondary flex items-center justify-center text-muted-foreground transition-colors"
@@ -1083,6 +1083,7 @@ function CalendarPicker({ selectedDate, onSelect }) {
 
 // --- Statistics Component Isolated ---
 function StatisticsView({ tasks, toggleTask }) {
+  const { t, i18n } = useTranslation();
   const [timeframe, setTimeframe] = useState(14);
   const [selectedDate, setSelectedDate] = useState(null);
   const [mounted, setMounted] = React.useState(false);
@@ -1284,8 +1285,12 @@ function StatisticsView({ tasks, toggleTask }) {
                            <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-foreground leading-snug">{todo.text || todo.title}</p>
                               <div className="flex flex-wrap items-center gap-1.5 mt-2 text-[10px] text-muted-foreground">
-                                 {timeStr && <span className="flex items-center gap-1 bg-secondary border border-border/50 px-2 py-0.5 rounded-md"><Clock className="h-3 w-3" /> {t('stats_completed_at', { time: timeStr })}</span>}
-                                 {todo.duration && <span className="flex items-center gap-1 bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded-md"><Timer className="h-3 w-3" /> {t('stats_estimated', { min: todo.duration })}</span>}
+                                 <span className={cn("flex items-center gap-1 px-2 py-0.5 rounded-md text-white whitespace-nowrap bg-gradient-to-r", categoryConfig[todo.category || 'home'].color)}>
+                                   {React.createElement(categoryConfig[todo.category || 'home'].icon, { className: "h-3 w-3" })}
+                                   {t(categoryConfig[todo.category || 'home'].label)}
+                                 </span>
+                                 {timeStr && <span className="flex items-center gap-1 bg-secondary border border-border/50 px-2 py-0.5 rounded-md whitespace-nowrap"><Clock className="h-3 w-3" /> {t('stats_completed_at', { time: timeStr })}</span>}
+                                 {todo.duration && <span className="flex items-center gap-1 bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded-md whitespace-nowrap"><Timer className="h-3 w-3" /> {t('stats_estimated', { min: todo.duration })}</span>}
                               </div>
                            </div>
                         </div>
