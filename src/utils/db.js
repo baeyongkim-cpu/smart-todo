@@ -123,7 +123,13 @@ export const loadTasks = async () => {
 
     const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
 
-    if (!error && data && data.length > 0) {
+    if (error) {
+      console.error('Supabase fetch error:', error);
+      const local = await localforage.getItem('tasks');
+      return local || [];
+    }
+
+    if (data) {
       const cleaned = data.map(t => {
         const rId = isValidUUID(t.repeat_id) ? t.repeat_id : null;
         return {
@@ -142,16 +148,10 @@ export const loadTasks = async () => {
           alarmTime: t.alarm_time
         };
       });
-      // 서버에 데이터가 있을 때만 로컬 캐시를 업데이트함
+      
+      // 서버 응답이 성공(data가 존재)하면 0개라도 로컬을 동기화함
       await localforage.setItem('tasks', cleaned);
       return cleaned;
-    } else if (data && data.length === 0) {
-       // 서버가 비어있다면, 로컬에 데이터가 있는지 확인하고 보존함
-       const local = await localforage.getItem('tasks');
-       if (local && local.length > 0) {
-         console.log('서버는 비어있으나 로컬 데이터를 보존합니다.');
-         return local;
-       }
     }
   } catch (err) {
     console.error('Load Error:', err);
