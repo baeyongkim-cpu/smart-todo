@@ -24,13 +24,13 @@ export const useTasks = () => {
         .on(
           'postgres_changes',
           {
-            event: '*', // 모든 변화 감지
+            event: '*', 
             schema: 'public',
-            table: 'tasks',
-            filter: `user_id=eq.${user.id}`
+            table: 'tasks'
+            // 서버 필터를 제거하고 클라이언트에서 즉시 재로드하는 방식으로 안정성 확보
           },
           async (payload) => {
-            // 서버에 변화가 생기면 로컬 데이터를 다시 불러와 동기화
+            console.log('실시간 동기화 신호 수신');
             const freshTasks = await loadTasks();
             setTasks(freshTasks);
           }
