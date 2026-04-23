@@ -82,14 +82,30 @@ export const useTasks = () => {
               });
             } else if (eventType === 'UPDATE') {
               const updated = normalizeTask(payload.new);
-              setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
+              setTasks(prev => {
+                const idx = prev.findIndex(t => t.id === updated.id);
+                if (idx === -1) return prev;
+                const existing = prev[idx];
+                // 핵심 필드가 동일하면 상태 변경 없음 (불필요한 리렌더 방지)
+                if (existing.completed === updated.completed &&
+                    existing.text === updated.text &&
+                    existing.title === updated.title &&
+                    existing.category === updated.category &&
+                    existing.priority === updated.priority &&
+                    existing.date === updated.date) {
+                  return prev; // 같은 배열 참조 → 리렌더 없음
+                }
+                const next = [...prev];
+                next[idx] = updated;
+                return next;
+              });
             } else if (eventType === 'DELETE') {
               const deletedId = payload.old?.id;
               if (deletedId) {
                 setTasks(prev => prev.filter(t => t.id !== deletedId));
               }
             }
-            console.log(`실시간 동기화: ${eventType} 즉시 반영`);
+            console.log(`실시간 동기화: ${eventType} 처리 완료`);
           }
         )
         .subscribe();
