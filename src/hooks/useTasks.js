@@ -97,22 +97,29 @@ export const useTasks = () => {
 
     setupRealtime();
 
-    // 3. 화면 포커스 시 자동 새로고침 (실시간 보조)
-    const handleFocus = async () => {
-      console.log('화면 포커스 감지: 데이터 새로고침');
-      const freshTasks = await loadTasks();
-      if (isMounted) setTasks(freshTasks);
+    // 3. 장시간 비활성 후 복귀 시에만 동기화 (30초 이상 비활성)
+    let lastActiveTime = Date.now();
+
+    const handleVisibility = async () => {
+      if (document.visibilityState === 'visible') {
+        const inactiveDuration = Date.now() - lastActiveTime;
+        // 30초 이상 비활성 상태였을 때만 서버에서 새로고침
+        if (inactiveDuration > 30000) {
+          console.log('장시간 비활성 후 복귀: 데이터 동기화');
+          const freshTasks = await loadTasks();
+          if (isMounted) setTasks(freshTasks);
+        }
+      } else {
+        lastActiveTime = Date.now();
+      }
     };
 
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') handleFocus();
-    });
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       isMounted = false;
       if (channel) supabase.removeChannel(channel);
-      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 
