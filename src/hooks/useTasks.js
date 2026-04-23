@@ -21,8 +21,31 @@ export const useTasks = () => {
         if (isMounted) setLoading(false);
       });
 
-    // 2. 실시간 동기화 구독 (PC-폰 간 즉시 반영)
+    // 2. 실시간 동기화 구독 (PC-폰 간 즉시 반영 — payload 기반)
     let channel;
+
+    // Supabase snake_case → 앱 camelCase 변환 헬퍼
+    const isValidUUID = (id) => {
+      if (!id || typeof id !== 'string') return false;
+      const cleaned = id.trim().toLowerCase();
+      if (['null', 'none', 'undefined', '', 'null-null'].includes(cleaned)) return false;
+      return cleaned.length > 10;
+    };
+    const normalizeTask = (t) => ({
+      id: t.id,
+      text: t.text,
+      title: t.title,
+      date: t.date,
+      duration: t.duration,
+      category: t.category,
+      priority: t.priority,
+      repeat: isValidUUID(t.repeat_id) ? (t.repeat || 'none') : 'none',
+      completed: !!t.completed,
+      completedAt: t.completed_at,
+      createdAt: t.created_at,
+      repeatId: isValidUUID(t.repeat_id) ? t.repeat_id : null,
+      alarmTime: t.alarm_time
+    });
 
     const setupRealtime = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -43,12 +66,30 @@ export const useTasks = () => {
           {
             event: '*', 
             schema: 'public',
-            table: 'tasks'
+            table: 'tasks',
+            filter: `user_id=eq.${user.id}`
           },
-          async (payload) => {
-            console.log('실시간 동기화 신호 수신');
-            const freshTasks = await loadTasks();
-            if (isMounted) setTasks(freshTasks);
+          (payload) => {
+            if (!isMounted) return;
+            const eventType = payload.eventType;
+
+            if (eventType === 'INSERT') {
+              const newTask = normalizeTask(payload.new);
+              setTasks(prev => {
+                // 이미 존재하면 무시 (자기 자신이 추가한 것)
+                if (prev.some(t => t.id === newTask.id)) return prev;
+                return [newTask, ...prev];
+              });
+            } else if (eventType === 'UPDATE') {
+              const updated = normalizeTask(payload.new);
+              setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
+            } else if (eventType === 'DELETE') {
+              const deletedId = payload.old?.id;
+              if (deletedId) {
+                setTasks(prev => prev.filter(t => t.id !== deletedId));
+              }
+            }
+            console.log(`실시간 동기화: ${eventType} 즉시 반영`);
           }
         )
         .subscribe();
@@ -77,7 +118,8 @@ export const useTasks = () => {
 
   const persistTasks = async (newTasks) => {
     setTasks(newTasks);
-    await saveTasks(newTasks);
+    // 로컬을 먼저 즉시 저장하고 서버 동기화는 백그라운드로
+    saveTasks(newTasks).catch(err => console.error('서버 동기화 실패:', err));
   };
 
   const addTask = (taskObj) => {
@@ -158,11 +200,16 @@ export const useTasks = () => {
     persistTasks(newTasks);
   };
 
-  const deleteTask = (id) => {
+  const deleteTask = async (id) => {
     // 1. 즉각적인 UI 반영 (낙관적 업데이트)
-    setTasks(tasks.filter((t) => t.id !== id));
-    // 2. DB 및 로컬 저장소에서 명시적 삭제
-    deleteTaskDB(id);
+    const filtered = tasks.filter((t) => t.id !== id);
+    setTasks(filtered);
+    // 2. DB 및 로컬 저장소에서 명시적 삭제 (await로 완료 보장)
+    try {
+      await deleteTaskDB(id);
+    } catch (err) {
+      console.error('삭제 DB 동기화 실패:', err);
+    }
   };
 
   const resetAllTasks = async () => {

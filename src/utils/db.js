@@ -56,8 +56,20 @@ export const saveTasks = async (tasks) => {
   return tasks;
 };
 
-// 데이터 삭제
+// 데이터 삭제 (로컬 먼저 → 서버 후)
 export const deleteTaskDB = async (id) => {
+  // 1. 로컬을 즉시 먼저 삭제 (새로고침 시 복구 방지)
+  try {
+    const localTasks = await localforage.getItem('tasks');
+    if (localTasks) {
+      const filtered = localTasks.filter(t => t.id !== id);
+      await localforage.setItem('tasks', filtered);
+    }
+  } catch (localErr) {
+    console.error('로컬 삭제 실패:', localErr);
+  }
+
+  // 2. 서버에서도 삭제
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -71,15 +83,8 @@ export const deleteTaskDB = async (id) => {
         console.error('Supabase 삭제 실패:', error.message);
       }
     }
-    
-    // 로컬에서도 명시적으로 삭제 (안전장치)
-    const localTasks = await localforage.getItem('tasks');
-    if (localTasks) {
-      const filtered = localTasks.filter(t => t.id !== id);
-      await localforage.setItem('tasks', filtered);
-    }
   } catch (err) {
-    console.error('삭제 처리 중 오류:', err);
+    console.error('서버 삭제 처리 중 오류:', err);
   }
 };
 
