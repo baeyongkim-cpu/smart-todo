@@ -139,10 +139,15 @@ export const useTasks = () => {
     };
   }, []);
 
-  const persistTasks = async (newTasks) => {
+  // 저장 큐: 동시 saveTasks 호출이 서로를 덮어쓰는 것을 방지
+  const savePromiseRef = { current: Promise.resolve() };
+
+  const persistTasks = (newTasks) => {
     setTasks(newTasks);
-    // 로컬을 먼저 즉시 저장하고 서버 동기화는 백그라운드로
-    saveTasks(newTasks).catch(err => console.error('서버 동기화 실패:', err));
+    // 이전 저장이 완료된 후에 다음 저장을 실행 (큐 방식)
+    savePromiseRef.current = savePromiseRef.current
+      .then(() => saveTasks(newTasks))
+      .catch(err => console.error('서버 동기화 실패:', err));
   };
 
   const addTask = (taskObj) => {
@@ -206,27 +211,38 @@ export const useTasks = () => {
   };
 
   const updateTask = (id, updates) => {
-    const newTasks = tasks.map((t) =>
-      t.id === id ? { ...t, ...updates } : t
-    );
-    persistTasks(newTasks);
+    setTasks(prev => {
+      const newTasks = prev.map((t) =>
+        t.id === id ? { ...t, ...updates } : t
+      );
+      // 큐에 저장 예약
+      savePromiseRef.current = savePromiseRef.current
+        .then(() => saveTasks(newTasks))
+        .catch(err => console.error('서버 동기화 실패:', err));
+      return newTasks;
+    });
   };
 
   const toggleTask = (id) => {
-    const newTasks = tasks.map((t) =>
-      t.id === id ? { 
-        ...t, 
-        completed: !t.completed,
-        completedAt: !t.completed ? new Date().toISOString() : null
-      } : t
-    );
-    persistTasks(newTasks);
+    setTasks(prev => {
+      const newTasks = prev.map((t) =>
+        t.id === id ? { 
+          ...t, 
+          completed: !t.completed,
+          completedAt: !t.completed ? new Date().toISOString() : null
+        } : t
+      );
+      // 큐에 저장 예약
+      savePromiseRef.current = savePromiseRef.current
+        .then(() => saveTasks(newTasks))
+        .catch(err => console.error('서버 동기화 실패:', err));
+      return newTasks;
+    });
   };
 
   const deleteTask = async (id) => {
     // 1. 즉각적인 UI 반영 (낙관적 업데이트)
-    const filtered = tasks.filter((t) => t.id !== id);
-    setTasks(filtered);
+    setTasks(prev => prev.filter((t) => t.id !== id));
     // 2. DB 및 로컬 저장소에서 명시적 삭제 (await로 완료 보장)
     try {
       await deleteTaskDB(id);
