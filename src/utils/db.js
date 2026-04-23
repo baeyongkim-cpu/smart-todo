@@ -56,6 +56,43 @@ export const saveTasks = async (tasks) => {
   return tasks;
 };
 
+// 개별 태스크 저장 (전체 리스트 대신 변경된 태스크만 upsert → Realtime 이벤트 1개만 발생)
+export const saveOneTask = async (task, allTasks) => {
+  // 1. 로컬에 전체 리스트 저장
+  await localforage.setItem('tasks', allTasks);
+  
+  // 2. 서버에는 변경된 태스크 하나만 upsert
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('tasks')
+      .upsert({
+        id: task.id,
+        user_id: user.id,
+        text: task.text || task.title,
+        title: task.title || task.text,
+        date: task.date,
+        duration: task.duration,
+        category: task.category,
+        priority: task.priority,
+        repeat: task.repeat || 'none',
+        completed: !!task.completed,
+        completed_at: task.completedAt || task.completed_at,
+        created_at: task.createdAt || task.created_at,
+        repeat_id: isValidUUID(task.repeatId || task.repeat_id) ? (task.repeatId || task.repeat_id) : null,
+        alarm_time: task.alarmTime || task.alarm_time
+      });
+    
+    if (error) {
+      console.error('개별 태스크 저장 실패:', error.message);
+    }
+  } catch (err) {
+    console.error('개별 태스크 동기화 중 오류:', err);
+  }
+};
+
 // 데이터 삭제 (로컬 먼저 → 서버 후)
 export const deleteTaskDB = async (id) => {
   // 1. 로컬을 즉시 먼저 삭제 (새로고침 시 복구 방지)

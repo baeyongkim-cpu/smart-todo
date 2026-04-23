@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { isToday, isTomorrow, isBefore, startOfDay, addDays } from 'date-fns';
-import { loadTasks, saveTasks, deleteTaskDB, clearAllTasksDB, clearRepeatingTasksDB, clearAllIncompleteTasksDB, supabase } from '../utils/db';
+import { loadTasks, saveTasks, saveOneTask, deleteTaskDB, clearAllTasksDB, clearRepeatingTasksDB, clearAllIncompleteTasksDB, supabase } from '../utils/db';
 
 export const useTasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -82,6 +82,11 @@ export const useTasks = () => {
               });
             } else if (eventType === 'UPDATE') {
               const updated = normalizeTask(payload.new);
+              // 최근 로컬에서 수정한 태스크는 Realtime 무시 (자기 이벤트 방지)
+              if (recentlyModified.current.has(updated.id)) {
+                console.log(`실시간: ${updated.id} 최근 수정됨 → 자기 이벤트 무시`);
+                return;
+              }
               setTasks(prev => {
                 const idx = prev.findIndex(t => t.id === updated.id);
                 if (idx === -1) return prev;
@@ -93,7 +98,7 @@ export const useTasks = () => {
                     existing.category === updated.category &&
                     existing.priority === updated.priority &&
                     existing.date === updated.date) {
-                  return prev; // 같은 배열 참조 → 리렌더 없음
+                  return prev;
                 }
                 const next = [...prev];
                 next[idx] = updated;
@@ -139,15 +144,18 @@ export const useTasks = () => {
     };
   }, []);
 
-  // 저장 큐: 동시 saveTasks 호출이 서로를 덮어쓰는 것을 방지
-  const savePromiseRef = { current: Promise.resolve() };
+  // 최근 수정된 태스크 ID 추적 (Realtime 자기 이벤트 무시용)
+  const recentlyModified = useRef(new Map());
+
+  const markModified = (id) => {
+    recentlyModified.current.set(id, Date.now());
+    // 3초 후 자동 제거
+    setTimeout(() => recentlyModified.current.delete(id), 3000);
+  };
 
   const persistTasks = (newTasks) => {
     setTasks(newTasks);
-    // 이전 저장이 완료된 후에 다음 저장을 실행 (큐 방식)
-    savePromiseRef.current = savePromiseRef.current
-      .then(() => saveTasks(newTasks))
-      .catch(err => console.error('서버 동기화 실패:', err));
+    saveTasks(newTasks).catch(err => console.error('서버 동기화 실패:', err));
   };
 
   const addTask = (taskObj) => {
@@ -211,19 +219,21 @@ export const useTasks = () => {
   };
 
   const updateTask = (id, updates) => {
+    markModified(id);
     setTasks(prev => {
       const newTasks = prev.map((t) =>
         t.id === id ? { ...t, ...updates } : t
       );
-      // 큐에 저장 예약
-      savePromiseRef.current = savePromiseRef.current
-        .then(() => saveTasks(newTasks))
-        .catch(err => console.error('서버 동기화 실패:', err));
+      const changedTask = newTasks.find(t => t.id === id);
+      if (changedTask) {
+        saveOneTask(changedTask, newTasks).catch(err => console.error('서버 동기화 실패:', err));
+      }
       return newTasks;
     });
   };
 
   const toggleTask = (id) => {
+    markModified(id);
     setTasks(prev => {
       const newTasks = prev.map((t) =>
         t.id === id ? { 
@@ -232,10 +242,10 @@ export const useTasks = () => {
           completedAt: !t.completed ? new Date().toISOString() : null
         } : t
       );
-      // 큐에 저장 예약
-      savePromiseRef.current = savePromiseRef.current
-        .then(() => saveTasks(newTasks))
-        .catch(err => console.error('서버 동기화 실패:', err));
+      const changedTask = newTasks.find(t => t.id === id);
+      if (changedTask) {
+        saveOneTask(changedTask, newTasks).catch(err => console.error('서버 동기화 실패:', err));
+      }
       return newTasks;
     });
   };

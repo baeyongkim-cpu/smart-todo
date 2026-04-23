@@ -132,8 +132,12 @@ export function SmartTodo() {
   const confirmCompletion = () => {
     const { task, duration } = completeModalState;
     if (task) {
-      updateTask(task.id, { duration: parseInt(duration) });
-      toggleTask(task.id);
+      // duration과 완료 상태를 한 번에 업데이트 (2번 저장으로 인한 레이스 컨디션 방지)
+      updateTask(task.id, { 
+        duration: parseInt(duration),
+        completed: true,
+        completedAt: new Date().toISOString()
+      });
     }
     setCompleteModalState({ isOpen: false, task: null, duration: 30 });
   };
