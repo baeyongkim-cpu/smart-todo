@@ -146,11 +146,41 @@ export const useTasks = () => {
 
   // 최근 수정된 태스크 ID 추적 (Realtime 자기 이벤트 무시용)
   const recentlyModified = useRef(new Map());
+  const modifiedTimers = useRef(new Map());
+  // 서버 저장 디바운스용
+  const saveTimers = useRef(new Map());
+  const latestTasksRef = useRef([]);
+
+  // tasks 상태가 변경될 때마다 ref 동기화
+  useEffect(() => {
+    latestTasksRef.current = tasks;
+  }, [tasks]);
 
   const markModified = (id) => {
     recentlyModified.current.set(id, Date.now());
-    // 3초 후 자동 제거
-    setTimeout(() => recentlyModified.current.delete(id), 3000);
+    // 기존 타이머 정리 후 새로 설정 (마지막 수정 기준 5초)
+    if (modifiedTimers.current.has(id)) {
+      clearTimeout(modifiedTimers.current.get(id));
+    }
+    modifiedTimers.current.set(id, setTimeout(() => {
+      recentlyModified.current.delete(id);
+      modifiedTimers.current.delete(id);
+    }, 5000));
+  };
+
+  // 서버 저장 디바운스: 빠른 토글 시 마지막 상태만 서버에 전송
+  const debouncedServerSave = (id) => {
+    if (saveTimers.current.has(id)) {
+      clearTimeout(saveTimers.current.get(id));
+    }
+    saveTimers.current.set(id, setTimeout(() => {
+      saveTimers.current.delete(id);
+      const allTasks = latestTasksRef.current;
+      const task = allTasks.find(t => t.id === id);
+      if (task) {
+        saveOneTask(task, allTasks).catch(err => console.error('서버 동기화 실패:', err));
+      }
+    }, 600));
   };
 
   const persistTasks = (newTasks) => {
@@ -224,12 +254,10 @@ export const useTasks = () => {
       const newTasks = prev.map((t) =>
         t.id === id ? { ...t, ...updates } : t
       );
-      const changedTask = newTasks.find(t => t.id === id);
-      if (changedTask) {
-        saveOneTask(changedTask, newTasks).catch(err => console.error('서버 동기화 실패:', err));
-      }
       return newTasks;
     });
+    // 서버 저장은 디바운스 (마지막 상태만 전송)
+    debouncedServerSave(id);
   };
 
   const toggleTask = (id) => {
@@ -242,12 +270,10 @@ export const useTasks = () => {
           completedAt: !t.completed ? new Date().toISOString() : null
         } : t
       );
-      const changedTask = newTasks.find(t => t.id === id);
-      if (changedTask) {
-        saveOneTask(changedTask, newTasks).catch(err => console.error('서버 동기화 실패:', err));
-      }
       return newTasks;
     });
+    // 서버 저장은 디바운스 (마지막 상태만 전송)
+    debouncedServerSave(id);
   };
 
   const deleteTask = async (id) => {
