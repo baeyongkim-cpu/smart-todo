@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { Plus, Check, Trash2, Clock, Zap, Home, Calendar as CalendarIcon, Star, Repeat, Timer, BarChart, ChevronLeft, ChevronRight, Settings, Palette, Type, Heart, Smile, Coffee, Target, Lightbulb, LogOut, CalendarX, Briefcase, User, Globe, Tag, Sparkles, Bot, ShieldCheck, HelpCircle, Bell, BellOff } from "lucide-react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { Plus, Check, Trash2, Clock, Zap, Home, Calendar as CalendarIcon, Star, Repeat, Timer, BarChart, ChevronLeft, ChevronRight, Settings, Palette, Type, Heart, Smile, Coffee, Target, Lightbulb, LogOut, CalendarX, Briefcase, User, Globe, Tag, Sparkles, Bot, ShieldCheck, HelpCircle, Bell, BellOff, RefreshCcw } from "lucide-react";
 import { supabase } from "../utils/db";
 import { cn } from "../lib/utils";
 import { useTasks } from "../hooks/useTasks";
@@ -58,12 +58,14 @@ export function SmartTodo() {
   const [selectedPriority, setSelectedPriority] = useState("medium");
   const [selectedDuration, setSelectedDuration] = useState(30);
   const [selectedTime, setSelectedTime] = useState(""); 
+  const [activeAlarmTask, setActiveAlarmTask] = useState(null);
+  const alarmAudioRef = useRef(null);
   const [isAlarmEnabled, setIsAlarmEnabled] = useState(false);
   const [isComposing, setIsComposing] = useState(false);
   const [isTimeModalOpen, setIsTimeModalOpen] = useState(false); // 시간 선택 모달 상태
   
-  const hourScrollRef = React.useRef(null);
-  const minuteScrollRef = React.useRef(null);
+  const hourScrollRef = useRef(null);
+  const minuteScrollRef = useRef(null);
   
   const [repeatModalState, setRepeatModalState] = useState({ isOpen: false, targetId: null, type: 'none', payload: '' });
   const [newTodoRepeat, setNewTodoRepeat] = useState("none"); // Default for new UI
@@ -172,21 +174,29 @@ export function SmartTodo() {
     }
   };
 
-  // Alarm sound helper
-  const playAlarmSound = () => {
+  // Alarm sound helper with looping support
+  const playAlarmSound = (loop = false) => {
     try {
-      // Using a premium Zen Crystal Chime
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
-      audio.volume = 0.6;
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.warn("Audio playback delayed until user interaction.", error);
-        });
+      if (alarmAudioRef.current) {
+        alarmAudioRef.current.pause();
       }
+      // Using a more persistent, high-quality sleek alert sound
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audio.volume = 0.8;
+      audio.loop = loop;
+      audio.play().catch(e => console.log('Audio play failed:', e));
+      alarmAudioRef.current = audio;
     } catch (err) {
-      console.error("Failed to play alarm sound:", err);
+      console.error('Sound error:', err);
     }
+  };
+
+  const stopAlarm = () => {
+    if (alarmAudioRef.current) {
+      alarmAudioRef.current.pause();
+      alarmAudioRef.current = null;
+    }
+    setActiveAlarmTask(null);
   };
 
   // Alarm Checker: Improved accuracy and timezone safety
@@ -194,20 +204,16 @@ export function SmartTodo() {
 
   useEffect(() => {
     const checkAlarms = () => {
-      if (Notification.permission !== "granted") return;
-      
       const now = new Date();
       const currentHHmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       
-      // Prevent duplicate notifications in the same minute
       if (currentHHmm === lastNotifiedMinute) return;
       
-      let hasNotified = false;
+      let matchedTask = null;
       
       tasks.forEach(task => {
         if (task.completed || !task.alarmTime) return;
 
-        // Robust Local Date Comparison
         const taskDate = new Date(task.date);
         const isToday = 
           taskDate.getFullYear() === now.getFullYear() &&
@@ -215,34 +221,32 @@ export function SmartTodo() {
           taskDate.getDate() === now.getDate();
 
         if (task.alarmTime === currentHHmm && isToday) {
-          // 1. Play Premium Sound
-          playAlarmSound();
-
-          const title = `[${currentHHmm}] ${t('task_alarm_title', '할 일 알림')}`;
-          const options = {
-            body: task.text,
-            icon: "/favicon.ico",
-            badge: "/favicon.ico",
-            vibrate: [300, 100, 300],
-            tag: `alarm-${task.id}`,
-            requireInteraction: true 
-          };
-
-          // 2. Show Notification
-          if ('serviceWorker' in navigator && Notification.permission === 'granted') {
-            navigator.serviceWorker.ready.then(registration => {
-              registration.showNotification(title, options);
-            });
-          } else {
-            new Notification(title, options);
-          }
-          
-          hasNotified = true;
+          matchedTask = task;
         }
       });
 
-      if (hasNotified) {
+      if (matchedTask) {
+        // 1. Play Loopable Sound
+        playAlarmSound(true);
+        
+        // 2. Set Active Alarm Task for UI Overlay
+        setActiveAlarmTask(matchedTask);
         setLastNotifiedMinute(currentHHmm);
+
+        // 3. Browser Notification (Background support)
+        const title = `[${currentHHmm}] ${t('task_alarm_title', '할 일 알림')}`;
+        const options = {
+          body: matchedTask.text,
+          icon: "/favicon.ico",
+          requireInteraction: true,
+          vibrate: [500, 200, 500, 200, 500]
+        };
+
+        if ('serviceWorker' in navigator && Notification.permission === 'granted') {
+          navigator.serviceWorker.ready.then(reg => reg.showNotification(title, options));
+        } else if (Notification.permission === 'granted') {
+          new Notification(title, options);
+        }
       }
     };
 
@@ -354,10 +358,12 @@ export function SmartTodo() {
   const today = startOfDay(new Date());
   
   // Filter all tasks (completed and uncompleted) for the selected date
-  const selectedDateTasks = tasks.filter((todo) => {
-    const taskDate = startOfDay(new Date(todo.date || todo.createdAt));
-    return isSameDay(taskDate, selectedDate);
-  });
+  const selectedDateTasks = useMemo(() => {
+    return tasks.filter((todo) => {
+      const taskDate = startOfDay(new Date(todo.date || todo.createdAt));
+      return isSameDay(taskDate, selectedDate);
+    });
+  }, [tasks, selectedDate]);
 
   // Sort: Uncompleted first, then by creation time
   const sortedTasks = [...selectedDateTasks].sort((a, b) => {
@@ -1148,7 +1154,17 @@ export function SmartTodo() {
                      {/* Management Link */}
                      <div className="pt-2 border-t border-border/50">
                         <button 
-                          onClick={() => setSettingsView('reset')}
+                           onClick={() => {
+                             if (window.confirm(t('confirm_refresh', '앱을 새로고침하여 최신 버전을 불러올까요?'))) {
+                               window.location.reload(true);
+                             }
+                           }}
+                           className="w-full py-3 rounded-xl bg-primary/10 text-primary text-sm font-bold hover:bg-primary/20 transition-all flex items-center justify-center gap-2 border border-primary/20 mb-3"
+                         >
+                           <RefreshCcw className="h-4 w-4" /> {t('refresh_app', '앱 최신버전으로 업데이트')}
+                         </button>
+                         <button 
+                           onClick={() => setSettingsView('reset')}
                           className="w-full py-3 rounded-xl bg-secondary/50 text-foreground text-sm font-bold hover:bg-secondary transition-all flex items-center justify-center gap-2"
                         >
                           <Trash2 className="h-4 w-4 text-rose-500" /> {t('reset_data')}
@@ -1630,6 +1646,51 @@ export function SmartTodo() {
         )}
       </AnimatePresence>
 
+      {/* Alarm Overlay - High Visibility */}
+      <AnimatePresence>
+        {activeAlarmTask && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-background/95 backdrop-blur-3xl"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 50, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 50, opacity: 0 }}
+              className="w-full max-w-md bg-card border border-primary/30 shadow-[0_0_80px_rgba(34,211,238,0.3)] rounded-[32px] p-8 text-center relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-cyan-500 via-primary to-teal-500 animate-pulse" />
+              <div className="flex justify-center mb-8">
+                <div className="h-24 w-24 rounded-full bg-primary/20 flex items-center justify-center animate-bounce shadow-[0_0_40px_rgba(34,211,238,0.4)]">
+                  <Bell className="h-12 w-12 text-primary animate-pulse" />
+                </div>
+              </div>
+              <h2 className="text-3xl font-black text-foreground mb-4 tracking-tighter uppercase">
+                {t('task_alarm_title', 'Task Reminder')}
+              </h2>
+              <div className="mb-10 p-8 bg-secondary/40 rounded-3xl border border-white/5 shadow-inner">
+                <p className="text-2xl font-bold text-foreground leading-tight mb-4">
+                  {activeAlarmTask.text}
+                </p>
+                <div className="flex items-center justify-center gap-2 text-primary font-mono font-bold text-xl bg-primary/10 py-2 px-4 rounded-full w-fit mx-auto">
+                  <Clock className="h-6 w-6" />
+                  {activeAlarmTask.alarmTime}
+                </div>
+              </div>
+              <button
+                onClick={stopAlarm}
+                className="w-full py-6 bg-primary text-primary-foreground font-black text-xl rounded-2xl shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group"
+              >
+                <BellOff className="h-7 w-7 group-hover:rotate-12 transition-transform" />
+                {t('stop_alarm', '알람 끄기')}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
@@ -1697,9 +1758,9 @@ function CalendarPicker({ selectedDate, onSelect }) {
 function StatisticsView({ tasks, toggleTask, handleAIAnalysis, isAnalyzing, aiInsight, isPremium, userEmail, selectedDate: activeDate, setSelectedDate: setActiveDate }) {
   const { t, i18n } = useTranslation();
   const [timeframe, setTimeframe] = useState(14);
-  const [mounted, setMounted] = React.useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Trigger CSS height transition after initial mount
     const timer = setTimeout(() => setMounted(true), 100);
     return () => clearTimeout(timer);

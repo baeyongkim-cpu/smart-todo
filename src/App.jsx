@@ -58,8 +58,8 @@ function App() {
       )}
       
       {/* 버전 표시 (우측 하단 아주 작게) */}
-      <div className="fixed bottom-1 right-2 text-[10px] text-white/30 pointer-events-none select-none z-[9999]">
-        v1.1.1
+      <div className="fixed bottom-1 right-2 text-[10px] text-white/30 pointer-events-none select-none z-[99999]">
+        v1.1.3
       </div>
     </div>
   )

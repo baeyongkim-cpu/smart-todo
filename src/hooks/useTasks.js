@@ -403,20 +403,31 @@ export const useTasks = () => {
   }, [tasks]);
 
   const repeatingTaskGroups = useMemo(() => {
-    const groups = {};
+    const groupsMap = new Map();
+    
+    // First pass: identify groups and basic properties
     tasks.forEach(t => {
-      if (t.repeatId && !groups[t.repeatId]) {
-        groups[t.repeatId] = {
-          id: t.repeatId,
-          text: t.text || t.title,
-          repeat: t.repeat,
-          category: t.category,
-          count: tasks.filter(item => item.repeatId === t.repeatId).length,
-          uncompletedCount: tasks.filter(item => item.repeatId === t.repeatId && !item.completed).length
-        };
+      if (t.repeatId) {
+        if (!groupsMap.has(t.repeatId)) {
+          groupsMap.set(t.repeatId, {
+            id: t.repeatId,
+            text: t.text || t.title,
+            repeat: t.repeat,
+            category: t.category,
+            count: 0,
+            uncompletedCount: 0
+          });
+        }
+        
+        const group = groupsMap.get(t.repeatId);
+        group.count++;
+        if (!t.completed) {
+          group.uncompletedCount++;
+        }
       }
     });
-    return Object.values(groups);
+    
+    return Array.from(groupsMap.values());
   }, [tasks]);
 
   return {

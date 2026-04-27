@@ -64,9 +64,16 @@ export const quickAddTasksWithAI = async (input, language = 'ko') => {
 };
 
 export const analyzeTasksWithAI = async (tasks, language = 'ko') => {
-  const API_KEY = import.meta.env.VITE_GEMINI_API_KEY?.trim();
+  const envKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const API_KEY = envKey?.trim();
   const isKorean = language && language.startsWith('ko');
-  if (!API_KEY) throw new Error("API Key Missing");
+  
+  if (!API_KEY) {
+    console.error("DEBUG: VITE_GEMINI_API_KEY is missing. env exists:", !!import.meta.env);
+    throw new Error(isKorean 
+      ? "AI API 키를 찾을 수 없습니다. 설정 또는 환경 변수(.env)를 확인해주세요. (PWA 캐시 문제일 수 있으니 앱을 새로고침해보세요)" 
+      : "AI API Key Missing. Please check your .env or settings. (Try refreshing the app if this is a PWA issue)");
+  }
 
   const prompt = `
     Analyze these tasks for productivity insights: ${JSON.stringify(tasks)}
