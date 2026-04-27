@@ -828,7 +828,7 @@ export function SmartTodo() {
                           <button
                             onClick={() => handleToggleTaskWithConfirm(todo)}
                             className={cn(
-                              "mt-0.5 h-6 w-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 shrink-0",
+                              "mt-0.5 h-9 w-9 sm:h-6 sm:w-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 shrink-0",
                               todo.completed
                                 ? "bg-gradient-to-br from-cyan-500 to-teal-500 border-transparent shadow-[0_0_10px_rgba(34,211,238,0.4)]"
                                 : "border-border/80 hover:border-primary bg-background shadow-inner"
@@ -899,7 +899,7 @@ export function SmartTodo() {
                               <option value={60}>1{t('unit_hour')}</option>
                               <option value={120}>2{t('unit_hour')}</option>
                             </select>
-                            <button className="h-8 w-8 rounded-lg border border-border/70 bg-background flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200 shadow-sm">
+                            <button className="h-10 w-10 sm:h-8 sm:w-8 rounded-lg border border-border/70 bg-background flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200 shadow-sm">
                               <Timer className="h-4 w-4" />
                             </button>
                           </div>
@@ -908,7 +908,7 @@ export function SmartTodo() {
                           <button 
                             onClick={() => openRepeatModalFor(todo.id)}
                             title={t('title_repeat_change')}
-                            className="h-8 w-8 rounded-lg border border-border/70 bg-background flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200 shadow-sm"
+                            className="h-10 w-10 sm:h-8 sm:w-8 rounded-lg border border-border/70 bg-background flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200 shadow-sm"
                           >
                             <Repeat className="h-4 w-4" />
                           </button>
@@ -916,7 +916,7 @@ export function SmartTodo() {
                           {/* Delete Button */}
                           <button
                             onClick={() => deleteTask(todo.id)}
-                            className="h-8 w-8 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive hover:bg-destructive hover:text-white transition-all duration-200 shadow-sm"
+                            className="h-10 w-10 sm:h-8 sm:w-8 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive hover:bg-destructive hover:text-white transition-all duration-200 shadow-sm"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>

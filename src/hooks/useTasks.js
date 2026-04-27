@@ -73,25 +73,25 @@ export const useTasks = () => {
             if (!isMounted) return;
             const eventType = payload.eventType;
 
+            // Handle deletions and updates specifically to avoid ghosting
+            const targetId = eventType === 'DELETE' ? payload.old?.id : payload.new?.id;
+            if (targetId && recentlyModified.current.has(targetId)) {
+              console.log(`실시간: ${targetId} 최근 수정/삭제됨 → 이벤트 무시`);
+              return;
+            }
+
             if (eventType === 'INSERT') {
               const newTask = normalizeTask(payload.new);
               setTasks(prev => {
-                // 이미 존재하면 무시 (자기 자신이 추가한 것)
                 if (prev.some(t => t.id === newTask.id)) return prev;
                 return [newTask, ...prev];
               });
             } else if (eventType === 'UPDATE') {
               const updated = normalizeTask(payload.new);
-              // 최근 로컬에서 수정한 태스크는 Realtime 무시 (자기 이벤트 방지)
-              if (recentlyModified.current.has(updated.id)) {
-                console.log(`실시간: ${updated.id} 최근 수정됨 → 자기 이벤트 무시`);
-                return;
-              }
               setTasks(prev => {
                 const idx = prev.findIndex(t => t.id === updated.id);
                 if (idx === -1) return prev;
                 const existing = prev[idx];
-                // 핵심 필드가 동일하면 상태 변경 없음 (불필요한 리렌더 방지)
                 if (existing.completed === updated.completed &&
                     existing.text === updated.text &&
                     existing.title === updated.title &&
@@ -277,13 +277,18 @@ export const useTasks = () => {
   };
 
   const deleteTask = async (id) => {
-    // 1. 즉각적인 UI 반영 (낙관적 업데이트)
-    setTasks(prev => prev.filter((t) => t.id !== id));
-    // 2. DB 및 로컬 저장소에서 명시적 삭제 (await로 완료 보장)
     try {
+      // 1. 상태에서 즉시 제거 및 추적 시작 (UI 반응성 + 동기화 충돌 방지)
+      recentlyModified.current.add(id);
+      setTasks(prev => prev.filter(t => t.id !== id));
+      
+      // 2. DB 삭제 (비동기)
       await deleteTaskDB(id);
+      
+      // 일정 시간 후 추적 제거 (실시간 이벤트 지연 고려)
+      setTimeout(() => recentlyModified.current.delete(id), 5000);
     } catch (err) {
-      console.error('삭제 DB 동기화 실패:', err);
+      console.error('삭제 실패:', err);
     }
   };
 
