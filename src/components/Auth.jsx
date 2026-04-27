@@ -48,12 +48,17 @@ const Auth = ({ onLogin }) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: `${window.location.origin}/`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         }
       });
       if (error) throw error;
     } catch (err) {
-      setError(err.message);
+      console.error('Google Login Error:', err);
+      setError(`구글 로그인 실패: ${err.message || 'Supabase 설정을 확인해주세요.'}`);
     }
   };
 

@@ -172,6 +172,23 @@ export function SmartTodo() {
     }
   };
 
+  // Alarm sound helper
+  const playAlarmSound = () => {
+    try {
+      // Using a premium Zen Crystal Chime
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
+      audio.volume = 0.6;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.warn("Audio playback delayed until user interaction.", error);
+        });
+      }
+    } catch (err) {
+      console.error("Failed to play alarm sound:", err);
+    }
+  };
+
   // Alarm Checker: Improved accuracy with 10s checks and duplicate prevention
   const [lastNotifiedMinute, setLastNotifiedMinute] = useState("");
 
@@ -182,24 +199,40 @@ export function SmartTodo() {
       const now = new Date();
       const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       
-      // Prevent duplicate notifications in the same minute
       if (currentTime === lastNotifiedMinute) return;
       
       tasks.forEach(task => {
-        const taskDate = new Date(task.date);
-        if (!task.completed && task.alarmTime === currentTime && isSameDay(taskDate, now)) {
-          new Notification(`[${currentTime}] ${t('task_alarm_title', '할 일 알림')}`, {
+        const taskDateStr = format(new Date(task.date), 'yyyy-MM-dd');
+        const todayStr = format(now, 'yyyy-MM-dd');
+        if (!task.completed && task.alarmTime === currentTime && taskDateStr === todayStr) {
+          // 1. Play Premium Sound
+          playAlarmSound();
+
+          const title = `[${currentTime}] ${t('task_alarm_title', '할 일 알림')}`;
+          const options = {
             body: task.text,
             icon: "/favicon.ico",
+            badge: "/favicon.ico",
+            vibrate: [200, 100, 200], // Haptic feedback for Android
             tag: `alarm-${task.id}`,
-            requireInteraction: true // Keep notification until user dismisses it
-          });
+            requireInteraction: true 
+          };
+
+          // 2. Show Notification (Service Worker way is more reliable on Android)
+          if ('serviceWorker' in navigator && Notification.permission === 'granted') {
+            navigator.serviceWorker.ready.then(registration => {
+              registration.showNotification(title, options);
+            });
+          } else {
+            new Notification(title, options);
+          }
+          
           setLastNotifiedMinute(currentTime);
         }
       });
     };
 
-    const interval = setInterval(checkAlarms, 10000); // Check every 10 seconds
+    const interval = setInterval(checkAlarms, 10000);
     return () => clearInterval(interval);
   }, [tasks, t, lastNotifiedMinute]);
   // 시간 선택 모달이 열릴 때 선택된 시간으로 스크롤
@@ -826,6 +859,12 @@ export function SmartTodo() {
                                   {formatRepeatLabel(todo.repeat)}
                                 </span>
                               )}
+                              {todo.alarmTime && (
+                                <span className="flex items-center gap-1 text-[10px] font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-md px-2 py-0.5 whitespace-nowrap">
+                                  <Bell className="h-3 w-3" />
+                                  {todo.alarmTime}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1101,8 +1140,40 @@ export function SmartTodo() {
                       </div>
 
                       <div className="space-y-3">
-                         {/* 1. 전체 초기화 */}
-                         <button 
+                        {/* Diagnostic Test Alarm Button */}
+                        <button 
+                          onClick={() => {
+                            playAlarmSound();
+                            if (Notification.permission === 'granted') {
+                               const title = "FocusFlow 알람 테스트";
+                               const options = {
+                                 body: "알람과 소리가 정상적으로 작동합니다! (3초 후 자동 닫힘)",
+                                 icon: "/favicon.ico",
+                                 badge: "/favicon.ico",
+                                 vibrate: [300, 100, 300, 100, 300],
+                                 requireInteraction: false
+                               };
+                               if ('serviceWorker' in navigator) {
+                                 navigator.serviceWorker.ready.then(reg => reg.showNotification(title, options));
+                               } else {
+                                 const n = new Notification(title, options);
+                                 setTimeout(() => n.close(), 3000);
+                               }
+                            } else {
+                              alert(t('allow_notifications_first', '먼저 알림 권한을 허용해주세요.'));
+                            }
+                          }}
+                          className="w-full flex items-center gap-3 p-4 rounded-2xl bg-cyan-500/10 hover:bg-cyan-500/20 transition-all border border-cyan-500/30 text-cyan-400 group mb-4"
+                        >
+                          <Bell className="h-5 w-5 animate-bounce" />
+                          <div className="text-left">
+                            <span className="text-sm font-bold block">{t('test_alarm', '알람 작동 테스트')}</span>
+                            <span className="text-[10px] opacity-70">소리와 진동을 즉시 확인합니다.</span>
+                          </div>
+                        </button>
+
+                        {/* 1. 전체 초기화 */}
+                        <button 
                            onClick={() => {
                              setConfirmState({
                                title: t('reset_all_title'),
@@ -1919,6 +1990,7 @@ function StatisticsView({ tasks, toggleTask, handleAIAnalysis, isAnalyzing, aiIn
                                    {t(categoryConfig[todo.category || 'home'].label)}
                                  </span>
                                  {timeStr && <span className="flex items-center gap-1 bg-secondary border border-border/50 px-2 py-0.5 rounded-md whitespace-nowrap"><Clock className="h-3 w-3" /> {t('stats_completed_at', { time: timeStr })}</span>}
+                                 {todo.alarmTime && <span className="flex items-center gap-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-md whitespace-nowrap"><Bell className="h-3 w-3" /> {todo.alarmTime}</span>}
                                  {todo.duration && <span className="flex items-center gap-1 bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded-md whitespace-nowrap"><Timer className="h-3 w-3" /> {t('stats_estimated', { min: todo.duration })}</span>}
                               </div>
                            </div>
