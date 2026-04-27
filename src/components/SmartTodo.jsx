@@ -30,7 +30,7 @@ const iconMap = {
 
 export function SmartTodo() {
   const { t, i18n } = useTranslation();
-  const { tasks, loading, addTask, updateTask, toggleTask, deleteTask, resetAllTasks, resetRepeatingTask, resetAllIncompleteTasks, resetAllRepeatingIncompleteTasks, repeatingTaskGroups } = useTasks();
+  const { tasks, loading, syncStatus, addTask, updateTask, toggleTask, deleteTask, resetAllTasks, resetRepeatingTask, resetAllIncompleteTasks, resetAllRepeatingIncompleteTasks, repeatingTaskGroups } = useTasks();
 
   const [activeTab, setActiveTab] = useState("home"); // 'home' | 'stats'
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
@@ -501,7 +501,18 @@ export function SmartTodo() {
               <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-background animate-pulse" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground tracking-tight">{settings.appTitle || t('app_title')}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-foreground tracking-tight">{settings.appTitle || t('app_title')}</h1>
+                <div 
+                  className={cn(
+                    "px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter transition-colors",
+                    syncStatus === 'SUBSCRIBED' ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                  )}
+                  title={`Realtime: ${syncStatus}`}
+                >
+                  {syncStatus === 'SUBSCRIBED' ? 'Live' : 'Offline'}
+                </div>
+              </div>
               <p className="text-sm text-muted-foreground italic">"{quote}"</p>
             </div>
           </div>

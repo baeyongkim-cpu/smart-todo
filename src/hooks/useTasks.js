@@ -5,6 +5,7 @@ import { loadTasks, saveTasks, saveOneTask, deleteTaskDB, clearAllTasksDB, clear
 export const useTasks = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState('connecting');
 
   useEffect(() => {
     let isMounted = true;
@@ -67,17 +68,15 @@ export const useTasks = () => {
             event: '*', 
             schema: 'public',
             table: 'tasks'
-            // Removing filter for DELETE support: Supabase DELETE payloads only contain ID by default.
-            // With a filter, DELETE events are blocked because the 'old' record lacks 'user_id'.
           },
           (payload) => {
             if (!isMounted) return;
             const eventType = payload.eventType;
+            console.log(`[Realtime Event] ${eventType}:`, payload);
 
-            // Handle deletions and updates specifically to avoid ghosting
             const targetId = eventType === 'DELETE' ? payload.old?.id : payload.new?.id;
             if (targetId && recentlyModified.current.has(targetId)) {
-              console.log(`실시간: ${targetId} 최근 수정/삭제됨 → 이벤트 무시`);
+              console.log(`[Realtime] ${targetId} 최근 수정됨 → 중복 방지를 위해 무시`);
               return;
             }
 
@@ -111,10 +110,14 @@ export const useTasks = () => {
                 setTasks(prev => prev.filter(t => t.id !== deletedId));
               }
             }
-            console.log(`실시간 동기화: ${eventType} 처리 완료`);
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          if (isMounted) {
+             console.log(`[Realtime Status] ${status}`);
+             setSyncStatus(status);
+          }
+        });
     };
 
     setupRealtime();
@@ -419,14 +422,16 @@ export const useTasks = () => {
   return {
     tasks,
     loading,
+    syncStatus, // Expose sync status for UI feedback
     addTask,
     updateTask,
     toggleTask,
     deleteTask,
     resetAllTasks,
-    resetAllIncompleteTasks,
-    resetAllRepeatingIncompleteTasks,
-    resetRepeatingTask,
+    clearIncompleteTasks: resetAllIncompleteTasks,
+    clearRepeatingTasks: resetAllRepeatingIncompleteTasks,
+    bulkAddTasks: persistTasks,
+    loadTasksFromDB: loadTasks,
     progress,
     repeatingTaskGroups
   };
