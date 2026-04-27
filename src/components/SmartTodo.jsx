@@ -189,7 +189,7 @@ export function SmartTodo() {
     }
   };
 
-  // Alarm Checker: Improved accuracy with 10s checks and duplicate prevention
+  // Alarm Checker: Improved accuracy and timezone safety
   const [lastNotifiedMinute, setLastNotifiedMinute] = useState("");
 
   useEffect(() => {
@@ -197,28 +197,38 @@ export function SmartTodo() {
       if (Notification.permission !== "granted") return;
       
       const now = new Date();
-      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const currentHHmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       
-      if (currentTime === lastNotifiedMinute) return;
+      // Prevent duplicate notifications in the same minute
+      if (currentHHmm === lastNotifiedMinute) return;
+      
+      let hasNotified = false;
       
       tasks.forEach(task => {
-        const taskDateStr = format(new Date(task.date), 'yyyy-MM-dd');
-        const todayStr = format(now, 'yyyy-MM-dd');
-        if (!task.completed && task.alarmTime === currentTime && taskDateStr === todayStr) {
+        if (task.completed || !task.alarmTime) return;
+
+        // Robust Local Date Comparison
+        const taskDate = new Date(task.date);
+        const isToday = 
+          taskDate.getFullYear() === now.getFullYear() &&
+          taskDate.getMonth() === now.getMonth() &&
+          taskDate.getDate() === now.getDate();
+
+        if (task.alarmTime === currentHHmm && isToday) {
           // 1. Play Premium Sound
           playAlarmSound();
 
-          const title = `[${currentTime}] ${t('task_alarm_title', '할 일 알림')}`;
+          const title = `[${currentHHmm}] ${t('task_alarm_title', '할 일 알림')}`;
           const options = {
             body: task.text,
             icon: "/favicon.ico",
             badge: "/favicon.ico",
-            vibrate: [200, 100, 200], // Haptic feedback for Android
+            vibrate: [300, 100, 300],
             tag: `alarm-${task.id}`,
             requireInteraction: true 
           };
 
-          // 2. Show Notification (Service Worker way is more reliable on Android)
+          // 2. Show Notification
           if ('serviceWorker' in navigator && Notification.permission === 'granted') {
             navigator.serviceWorker.ready.then(registration => {
               registration.showNotification(title, options);
@@ -227,9 +237,13 @@ export function SmartTodo() {
             new Notification(title, options);
           }
           
-          setLastNotifiedMinute(currentTime);
+          hasNotified = true;
         }
       });
+
+      if (hasNotified) {
+        setLastNotifiedMinute(currentHHmm);
+      }
     };
 
     const interval = setInterval(checkAlarms, 10000);
