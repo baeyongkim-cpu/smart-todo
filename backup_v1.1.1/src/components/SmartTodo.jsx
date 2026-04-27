@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Plus, Check, Trash2, Clock, Zap, Home, Calendar as CalendarIcon, Star, Repeat, Timer, BarChart, ChevronLeft, ChevronRight, Settings, Palette, Type, Heart, Smile, Coffee, Target, Lightbulb, LogOut, CalendarX, Briefcase, User, Globe, Tag, Sparkles, Bot, ShieldCheck, HelpCircle, Bell, BellOff } from "lucide-react";
+import { Plus, Check, Trash2, Clock, Zap, Home, Calendar as CalendarIcon, Star, Repeat, Timer, BarChart, ChevronLeft, ChevronRight, Settings, Palette, Type, Heart, Smile, Coffee, Target, Lightbulb, LogOut, CalendarX, Briefcase, User, Globe, Tag } from "lucide-react";
 import { supabase } from "../utils/db";
 import { cn } from "../lib/utils";
 import { useTasks } from "../hooks/useTasks";
@@ -7,8 +7,6 @@ import { startOfDay, addDays, subDays, isSameDay, format, startOfMonth, endOfMon
 import { ko, enUS } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { getUserProfile, updateUserProfile } from "../utils/db";
-import { analyzeTasksWithAI } from "../utils/ai";
 
 const categoryConfig = {
   home: { icon: Home, label: "category_home", color: "from-cyan-500 to-teal-500" },
@@ -57,36 +55,11 @@ export function SmartTodo() {
   const [selectedCategory, setSelectedCategory] = useState("home");
   const [selectedPriority, setSelectedPriority] = useState("medium");
   const [selectedDuration, setSelectedDuration] = useState(30);
-  const [selectedTime, setSelectedTime] = useState(""); 
-  const [isAlarmEnabled, setIsAlarmEnabled] = useState(false);
-  const [isComposing, setIsComposing] = useState(false);
-  const [isTimeModalOpen, setIsTimeModalOpen] = useState(false); // 시간 선택 모달 상태
-  
-  const hourScrollRef = React.useRef(null);
-  const minuteScrollRef = React.useRef(null);
   
   const [repeatModalState, setRepeatModalState] = useState({ isOpen: false, targetId: null, type: 'none', payload: '' });
   const [newTodoRepeat, setNewTodoRepeat] = useState("none"); // Default for new UI
 
   const [completeModalState, setCompleteModalState] = useState({ isOpen: false, task: null, duration: 30 });
-
-  const [userEmail, setUserEmail] = useState("");
-  const [userProfile, setUserProfile] = useState(null);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [aiInsight, setAiInsight] = useState(null);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserEmail(user.email);
-        const profile = await getUserProfile();
-        setUserProfile(profile);
-      }
-    };
-    loadUser();
-  }, []);
 
   const quote = useMemo(() => {
     const quotesList = t('quotes', { returnObjects: true });
@@ -95,23 +68,19 @@ export function SmartTodo() {
     return quotesList[(date - 1) % quotesList.length];
   }, [t]);
 
-  const handleAddTodo = async () => {
-    if (!newTodo.trim() || isComposing) return;
-    
-    await addTask({
+  const handleAddTodo = () => {
+    if (!newTodo.trim()) return;
+    addTask({
       text: newTodo,
-      date: selectedDate.toISOString(),
       category: selectedCategory,
       priority: selectedPriority,
       duration: parseInt(selectedDuration),
-      alarmTime: isAlarmEnabled ? selectedTime : null,
       repeat: newTodoRepeat,
-      completed: false,
+      date: selectedDate.toISOString(),
     });
-    
     setNewTodo("");
-    setSelectedTime("");
-    setIsAlarmEnabled(false);
+    setSelectedDuration(30);
+    setNewTodoRepeat("none");
   };
 
   const handleLogout = async () => {
@@ -122,187 +91,6 @@ export function SmartTodo() {
   const handlePrevDay = () => setSelectedDate(prev => subDays(prev, 1));
   const handleNextDay = () => setSelectedDate(prev => addDays(prev, 1));
   const handleGoToday = () => setSelectedDate(startOfDay(new Date()));
-
-
-
-  const ALLOWED_AI_EMAIL = "ditto0038@naver.com";
-
-  const handleAIAnalysis = async () => {
-    if (userEmail !== ALLOWED_AI_EMAIL) {
-      alert(t('ai_access_denied', 'AI 기능은 현재 특정 계정에서만 사용 가능합니다.'));
-      return;
-    }
-
-    if (!userProfile?.is_premium) {
-      setShowUpgradeModal(true);
-      return;
-    }
-
-    // Filter tasks for the selected date only
-    const todayTasks = tasks.filter(t => isSameDay(new Date(t.date), selectedDate));
-
-    if (todayTasks.length === 0) {
-      alert(t('ai_no_tasks', '분석할 데이터가 없습니다. 먼저 할 일을 등록해보세요.'));
-      return;
-    }
-
-    setIsAnalyzing(true);
-    try {
-      const insight = await analyzeTasksWithAI(todayTasks, i18n.language);
-      setAiInsight(insight);
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const requestNotificationPermission = async () => {
-    if (!("Notification" in window)) {
-      alert(t('notif_not_supported', '이 브라우저는 알림을 지원하지 않습니다.'));
-      return;
-    }
-    const permission = await Notification.requestPermission();
-    if (permission === "granted") {
-      new Notification(t('notif_title', '알림 설정 완료!'), {
-        body: t('notif_body', '이제 할 일 시간에 맞춰 알림을 보내드릴게요.'),
-      });
-      // UI 갱신을 위해 강제 리렌더링 유도 (알람 아이콘 상태 반영)
-      window.dispatchEvent(new Event('storage'));
-    }
-  };
-
-  // Alarm Checker: Improved accuracy with 10s checks and duplicate prevention
-  const [lastNotifiedMinute, setLastNotifiedMinute] = useState("");
-
-  useEffect(() => {
-    const checkAlarms = () => {
-      if (Notification.permission !== "granted") return;
-      
-      const now = new Date();
-      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      
-      // Prevent duplicate notifications in the same minute
-      if (currentTime === lastNotifiedMinute) return;
-      
-      tasks.forEach(task => {
-        const taskDate = new Date(task.date);
-        if (!task.completed && task.alarmTime === currentTime && isSameDay(taskDate, now)) {
-          new Notification(`[${currentTime}] ${t('task_alarm_title', '할 일 알림')}`, {
-            body: task.text,
-            icon: "/favicon.ico",
-            tag: `alarm-${task.id}`,
-            requireInteraction: true // Keep notification until user dismisses it
-          });
-          setLastNotifiedMinute(currentTime);
-        }
-      });
-    };
-
-    const interval = setInterval(checkAlarms, 10000); // Check every 10 seconds
-    return () => clearInterval(interval);
-  }, [tasks, t, lastNotifiedMinute]);
-  // 시간 선택 모달이 열릴 때 선택된 시간으로 스크롤
-  useEffect(() => {
-    if (isTimeModalOpen) {
-      setTimeout(() => {
-        const [h, m] = (selectedTime || "00:00").split(':').map(Number);
-        const itemHeight = 48;
-        
-        if (hourScrollRef.current) {
-          const centerH = 24 * 5 + h; // 고속 스크롤을 위해 버퍼를 다시 10개 섹션(5번째 중앙)으로 확대
-          hourScrollRef.current.scrollTop = centerH * itemHeight;
-        }
-        
-        if (minuteScrollRef.current) {
-          const mIndex = Math.floor(m / 5);
-          const centerM = 12 * 5 + mIndex; // 5분 단위
-          minuteScrollRef.current.scrollTop = centerM * itemHeight;
-        }
-      }, 50);
-    }
-  }, [isTimeModalOpen]); 
-
-  // 스크롤 시 자동 선택 로직 - 고속 스크롤 지원 버전
-  const handleTimeScroll = (ref, type) => {
-    if (!ref.current) return;
-    const scrollTop = ref.current.scrollTop;
-    const itemHeight = 48;
-    const index = Math.round(scrollTop / itemHeight);
-    
-    const totalItems = type === 'hour' ? 24 : 12; // 5분 단위 = 12개 항목
-    const actualValue = index % totalItems;
-    
-    const [h, m] = (selectedTime || "00:00").split(':');
-    
-    if (type === 'hour') {
-      const newH = String(actualValue).padStart(2, '0');
-      if (newH !== h) {
-        setSelectedTime(`${newH}:${m}`);
-      }
-      // 고속 스크롤 시에도 끊김 없도록 점프 구간을 여유 있게 설정
-      if (index < totalItems * 2 || index > totalItems * 8) {
-        ref.current.scrollTop = (totalItems * 5 + actualValue) * itemHeight;
-      }
-    } else {
-      const newM = String(actualValue * 5).padStart(2, '0');
-      if (newM !== m) {
-        setSelectedTime(`${h}:${newM}`);
-      }
-      if (index < totalItems * 2 || index > totalItems * 8) {
-        ref.current.scrollTop = (totalItems * 5 + actualValue) * itemHeight;
-      }
-    }
-  };
-
-  const handleAIQuickAdd = async (input) => {
-    if (userEmail !== "ditto0038@naver.com") {
-      // 일반 입력으로 처리
-      await addTask({
-        text: input,
-        date: selectedDate.toISOString(),
-        category: selectedCategory,
-        priority: selectedPriority,
-        duration: 30,
-        completed: false,
-      });
-      setNewTodo("");
-      return;
-    }
-
-    if (!input.trim() || isAnalyzing) return;
-    setIsAnalyzing(true);
-    try {
-      const { quickAddTasksWithAI } = await import("../utils/ai");
-      const extracted = await quickAddTasksWithAI(input, i18n.language);
-      if (extracted) {
-        await addTask({
-          text: extracted.text,
-          date: extracted.date,
-          category: extracted.category || 'home',
-          priority: extracted.priority || 'medium',
-          duration: 30,
-          alarmTime: extracted.time, 
-          completed: false
-        });
-        setNewTodo(""); // 입력창 즉시 비우기
-        return true;
-      }
-      return false;
-    } catch (err) {
-      console.error("Quick add failed:", err);
-      return false;
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const handleUpgrade = async () => {
-    // 실제 결제 로직 대신 테스트용으로 프리미엄 전환
-    await updateUserProfile({ is_premium: true });
-    setUserProfile(prev => ({ ...prev, is_premium: true }));
-    setShowUpgradeModal(false);
-  };
 
   const today = startOfDay(new Date());
   
@@ -569,34 +357,16 @@ export function SmartTodo() {
 
             {/* Add Todo Card */}
             <div className="mb-6 rounded-2xl border border-white/15 bg-card/40 backdrop-blur-2xl p-5 shadow-2xl">
-                  <div className="relative group/input">
-                    <input
-                      type="text"
-                      value={newTodo}
-                      onChange={(e) => setNewTodo(e.target.value)}
-                      onCompositionStart={() => setIsComposing(true)}
-                      onCompositionEnd={() => setIsComposing(false)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !isComposing) {
-                          e.preventDefault();
-                          handleAddTodo();
-                        }
-                      }}
-                      placeholder={t('placeholder_new_todo')}
-                      className="w-full bg-black/40 border-2 border-white/10 rounded-xl pl-4 pr-12 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary/50 transition-all shadow-2xl"
-                    />
-                    <button
-                      onClick={handleAddTodo}
-                      disabled={!newTodo.trim()}
-                      className={cn(
-                        "absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all",
-                        newTodo.trim() ? "bg-primary text-white shadow-lg shadow-primary/20 hover:scale-105" : "text-muted-foreground"
-                      )}
-                      title={t('add_button')}
-                    >
-                      <Plus className="h-5 w-5" />
-                    </button>
-                  </div>
+              <div className="mb-4">
+                <input
+                  type="text"
+                  value={newTodo}
+                  onChange={(e) => setNewTodo(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddTodo()}
+                  placeholder={t('placeholder_new_todo')}
+                  className="w-full bg-black/40 border-2 border-white/10 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary/50 transition-all shadow-2xl"
+                />
+              </div>
 
               {/* Advanced Settings */}
               <div className="flex flex-col gap-6 mt-4 pt-4 border-t border-border/50">
@@ -689,45 +459,6 @@ export function SmartTodo() {
                     >
                       <span className="truncate">{formatRepeatLabel(newTodoRepeat)}</span>
                     </button>
-                  </div>
-
-                  {/* Alarm Selection */}
-                  <div className="flex-1 min-w-[140px] w-full">
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
-                      <Bell className={cn("h-3 w-3", isAlarmEnabled ? "text-cyan-400" : "")}/> {t('alarm', '알람 설정')}
-                    </span>
-                    <div className="flex items-center gap-2 bg-background border border-border/70 rounded-xl p-1 shadow-sm">
-                      <button
-                        onClick={() => {
-                          if (!isAlarmEnabled) {
-                            if (Notification.permission !== 'granted') requestNotificationPermission();
-                            // 기본 시간을 다음 정시로 설정
-                            const nextHour = new Date();
-                            nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
-                            setSelectedTime(format(nextHour, 'HH:mm'));
-                          }
-                          setIsAlarmEnabled(!isAlarmEnabled);
-                        }}
-                        className={cn(
-                          "h-8 px-3 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1.5 shrink-0",
-                          isAlarmEnabled ? "bg-cyan-400 text-white shadow-md shadow-cyan-400/20" : "bg-secondary/50 text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        {isAlarmEnabled ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
-                        {isAlarmEnabled ? t('on', 'ON') : t('off', 'OFF')}
-                      </button>
-                      {isAlarmEnabled && (
-                        <button
-                          onClick={() => setIsTimeModalOpen(true)}
-                          className="flex-1 bg-black/20 rounded-lg px-3 border border-white/5 h-8 flex items-center justify-between hover:bg-black/40 transition-colors"
-                        >
-                          <span className="text-[13px] font-bold text-cyan-400">
-                            {selectedTime || "00:00"}
-                          </span>
-                          <Clock className="h-3 w-3 text-cyan-400/50" />
-                        </button>
-                      )}
-                    </div>
                   </div>
                 </div>
                 
@@ -869,8 +600,7 @@ export function SmartTodo() {
                           </button>
                         </div>
                       </div>
-
-                      {/* Glow effect for high priority */}
+{/* Glow effect for high priority */}
                       {todo.priority === "high" && !todo.completed && (
                         <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-rose-500/5 to-transparent pointer-events-none" />
                       )}
@@ -881,17 +611,7 @@ export function SmartTodo() {
             </div>
           </>
         ) : (
-          <StatisticsView 
-            tasks={tasks} 
-            toggleTask={toggleTask} 
-            handleAIAnalysis={handleAIAnalysis}
-            isAnalyzing={isAnalyzing}
-            aiInsight={aiInsight}
-            isPremium={userProfile?.is_premium}
-            userEmail={userEmail}
-            selectedDate={selectedDate}
-            setSelectedDate={setSelectedDate}
-          />
+          <StatisticsView tasks={tasks} toggleTask={toggleTask} />
         )}
       </div>
 
@@ -1300,168 +1020,43 @@ export function SmartTodo() {
 
       {/* Complete Configuration Modal */}
       {completeModalState.isOpen && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[80] flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
-           <div className="bg-card w-full max-w-[320px] rounded-[32px] border border-border/50 shadow-2xl p-6 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary to-cyan-500" />
-              
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Check className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-foreground leading-none">{t('title_completion_record')}</h3>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1 font-bold">{t('label_actual_duration')}</p>
-                </div>
-              </div>
-              
-              <p className="text-sm text-muted-foreground/80 mb-6 px-1 italic line-clamp-2">"{completeModalState.task?.text || completeModalState.task?.title}"</p>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
+           <div className="bg-card w-full max-w-sm rounded-2xl border border-border/50 shadow-2xl p-6 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-teal-500" />
+              <h3 className="text-lg font-bold mb-2 text-foreground flex items-center gap-2">
+                 <Check className="h-5 w-5 text-primary" /> {t('title_completion_record')}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6 line-clamp-1">{completeModalState.task?.text || completeModalState.task?.title}</p>
               
               <div className="space-y-4">
-                 <div className="relative">
+                 <div>
+                    <label className="text-xs text-muted-foreground mb-2 block">{t('label_actual_duration')}</label>
                     <input 
                        type="number" min="1" max="1440" step="5"
                        value={completeModalState.duration}
                        onChange={(e) => setCompleteModalState({...completeModalState, duration: e.target.value})}
-                       className="w-full bg-secondary/50 border border-border/50 rounded-2xl px-5 py-4 text-xl font-black text-foreground outline-none focus:ring-2 focus:ring-primary/50 transition-all text-center"
-                       placeholder="30"
+                       className="w-full bg-secondary border border-border/50 rounded-xl px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/50"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground uppercase">{t('min_unit', '분')}</span>
                  </div>
               </div>
 
-              <div className="flex flex-col gap-2 mt-8">
-                 <button 
-                   onClick={confirmCompletion}
-                   className="w-full py-4 rounded-[20px] text-sm font-black bg-primary text-primary-foreground shadow-xl shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all"
-                 >
-                    {t('btn_complete_confirm')}
-                 </button>
+              <div className="flex gap-3 justify-end mt-8">
                  <button 
                    onClick={() => setCompleteModalState({ isOpen: false, task: null, duration: 30 })}
-                   className="w-full py-3 rounded-[20px] text-sm font-bold text-muted-foreground hover:bg-secondary transition-all"
+                   className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors"
                  >
                     {t('btn_cancel')}
+                 </button>
+                 <button 
+                   onClick={confirmCompletion}
+                   className="px-6 py-2 rounded-xl text-sm font-bold bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity"
+                 >
+                    {t('btn_complete_confirm')}
                  </button>
               </div>
            </div>
         </div>
       )}
-
-      {/* Custom Time Picker Modal */}
-      <AnimatePresence>
-        {isTimeModalOpen && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-card w-full max-w-[280px] rounded-[32px] border border-border/50 shadow-2xl p-6 overflow-hidden"
-            >
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-8 w-8 rounded-xl bg-cyan-400/10 flex items-center justify-center">
-                    <Clock className="h-4 w-4 text-cyan-400" />
-                  </div>
-                  <h3 className="text-lg font-bold text-foreground">{t('select_time', '시간 선택')}</h3>
-                </div>
-                <button 
-                  onClick={() => setIsTimeModalOpen(false)} 
-                  className="h-8 w-8 rounded-full hover:bg-secondary flex items-center justify-center text-muted-foreground transition-colors"
-                >
-                  <Plus className="h-5 w-5 rotate-45" />
-                </button>
-              </div>
-
-              {/* Time Picker Wheels Row */}
-              <div className="flex flex-col gap-2 mb-8">
-                {/* Labels Header */}
-                <div className="flex gap-4 justify-center items-center w-full px-2">
-                  <div className="w-20 text-center">
-                    <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-60">{t('hour', '시')}</span>
-                  </div>
-                  <div className="w-4" /> {/* Spacer for colon area */}
-                  <div className="w-20 text-center">
-                    <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-60">{t('minute', '분')}</span>
-                  </div>
-                </div>
-
-                {/* Wheels Container */}
-                <div className="flex gap-4 justify-center items-center relative h-[150px] w-full overflow-hidden">
-                  {/* Visual indicator for center selection - Perfectly centered in the wheel area */}
-                  <div className="absolute inset-x-0 h-12 top-1/2 -translate-y-1/2 bg-white/10 rounded-2xl pointer-events-none border-y border-white/10 z-0 shadow-[0_0_30px_rgba(34,211,238,0.2)]" />
-                  
-                  {/* Gradient Masks */}
-                  <div className="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-card to-transparent z-20 pointer-events-none" />
-                  <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent z-20 pointer-events-none" />
-
-                  {/* Hour Wheel */}
-                  <div className="z-10 w-20 h-full">
-                    <div 
-                      className="h-full w-full overflow-y-auto no-scrollbar snap-y snap-mandatory py-[51px] overscroll-contain" 
-                      ref={hourScrollRef}
-                      onScroll={() => handleTimeScroll(hourScrollRef, 'hour')}
-                    >
-                      {Array.from({ length: 24 * 10 }).map((_, i) => {
-                        const hVal = i % 24;
-                        const hStr = String(hVal).padStart(2, '0');
-                        const currentH = (selectedTime || "00:00").split(':')[0];
-                        const isActive = currentH === hStr;
-                        return (
-                          <div
-                            key={i}
-                            className={cn(
-                              "h-12 w-full flex items-center justify-center rounded-xl text-2xl font-black transition-all duration-200 snap-center select-none",
-                              isActive ? "text-cyan-400 scale-125 opacity-100" : "text-muted-foreground/50 scale-90 opacity-60"
-                            )}
-                          >
-                            {hStr}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="text-2xl font-black text-cyan-400/30 self-center z-10 mx-1">:</div>
-
-                  {/* Minute Wheel */}
-                  <div className="z-10 w-20 h-full">
-                    <div 
-                      className="h-full w-full overflow-y-auto no-scrollbar snap-y snap-mandatory py-[51px] overscroll-contain" 
-                      ref={minuteScrollRef}
-                      onScroll={() => handleTimeScroll(minuteScrollRef, 'minute')}
-                    >
-                      {Array.from({ length: 12 * 10 }).map((_, i) => {
-                        const mVal = (i % 12) * 5;
-                        const mStr = String(mVal).padStart(2, '0');
-                        const currentM = (selectedTime || "00:00").split(':')[1];
-                        const isActive = currentM === mStr;
-                        return (
-                          <div
-                            key={i}
-                            className={cn(
-                              "h-12 w-full flex items-center justify-center rounded-xl text-2xl font-black transition-all duration-200 snap-center select-none",
-                              isActive ? "text-cyan-400 scale-125 opacity-100" : "text-muted-foreground/50 scale-90 opacity-60"
-                            )}
-                          >
-                            {mStr}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setIsTimeModalOpen(false)}
-                className="w-full py-4 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-black text-sm rounded-[20px] shadow-xl shadow-cyan-500/20 active:scale-[0.98] transition-all"
-              >
-                {t('confirm', '확인')}
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* Calendar Picker Modal */}
       <AnimatePresence>
@@ -1492,43 +1087,6 @@ export function SmartTodo() {
                   setIsCalendarOpen(false);
                 }} 
               />
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Upgrade Modal */}
-      <AnimatePresence>
-        {showUpgradeModal && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-card w-full max-w-sm rounded-3xl border border-white/10 shadow-2xl p-8 text-center relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-teal-500" />
-              <div className="h-20 w-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-primary/20">
-                <Sparkles className="h-10 w-10 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold text-foreground mb-2">Upgrade to PRO</h3>
-              <p className="text-sm text-muted-foreground mb-8">
-                AI 분석, 프리미엄 테마, 무제한 데이터 동기화 등 모든 기능을 잠금 해제하세요.
-              </p>
-              <div className="space-y-3">
-                <button
-                  onClick={handleUpgrade}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-bold shadow-lg shadow-cyan-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                >
-                  프리미엄 시작하기
-                </button>
-                <button
-                  onClick={() => setShowUpgradeModal(false)}
-                  className="w-full py-3 rounded-2xl bg-secondary text-muted-foreground font-medium hover:text-foreground transition-all"
-                >
-                  나중에 하기
-                </button>
-              </div>
             </motion.div>
           </div>
         )}
@@ -1598,9 +1156,10 @@ function CalendarPicker({ selectedDate, onSelect }) {
 }
 
 // --- Statistics Component Isolated ---
-function StatisticsView({ tasks, toggleTask, handleAIAnalysis, isAnalyzing, aiInsight, isPremium, userEmail, selectedDate: activeDate, setSelectedDate: setActiveDate }) {
+function StatisticsView({ tasks, toggleTask }) {
   const { t, i18n } = useTranslation();
   const [timeframe, setTimeframe] = useState(14);
+  const [selectedDate, setSelectedDate] = useState(null);
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -1661,99 +1220,6 @@ function StatisticsView({ tasks, toggleTask, handleAIAnalysis, isAnalyzing, aiIn
 
   return (
     <div className="animate-in fade-in duration-500">
-      {/* AI Insight Card */}
-      <div className="bg-card/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 shadow-2xl mb-6 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-40 transition-opacity">
-          <Sparkles className="h-16 w-16 text-cyan-400" />
-        </div>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-cyan-400" />
-            <h3 className="font-bold text-foreground">{t('ai_analysis_title', 'AI 생산성 분석')}</h3>
-            {userEmail === "ditto0038@naver.com" && !isPremium && <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-bold">PRO</span>}
-          </div>
-          <div className="text-[10px] font-medium text-muted-foreground bg-white/5 px-2 py-1 rounded-md border border-white/5">
-            {format(activeDate, 'PPP', { locale: i18n.language === 'ko' ? ko : enUS })}
-          </div>
-        </div>
-        
-        {userEmail !== "ditto0038@naver.com" ? (
-          <div className="py-4 text-center">
-            <p className="text-sm text-muted-foreground">{t('ai_restricted_message', 'AI 분석 기능은 준비 중입니다.')}</p>
-          </div>
-        ) : aiInsight ? (
-          <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-            <div className="flex items-end gap-2">
-              <span className="text-3xl font-bold text-cyan-400">{aiInsight.efficiencyScore}</span>
-              <div className="flex items-center gap-1 pb-1">
-                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">
-                  {t('ai_efficiency_score', '생산성 점수')}
-                </span>
-                <div className="group/tooltip relative">
-                  <HelpCircle className="h-3 w-3 text-muted-foreground/50 cursor-help hover:text-cyan-400 transition-colors" />
-                  <div className="absolute left-0 bottom-full mb-2 w-52 p-3 bg-zinc-900 text-white text-[10px] rounded-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity z-50 shadow-2xl border border-white/10 leading-normal">
-                    {t('ai_score_desc', '할 일 완료 패턴과 소요 시간, 카테고리별 비중을 분석하여 산출한 현재 생산성 지수입니다.')}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <p className="text-sm text-foreground leading-relaxed font-medium">{aiInsight.insight}</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                <span className="text-[10px] text-muted-foreground block mb-1 uppercase tracking-wider">{t('ai_peak_time', 'Peak Focus')}</span>
-                <span className="text-xs font-bold text-cyan-400">{aiInsight.peakTime}</span>
-              </div>
-              <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                <span className="text-[10px] text-muted-foreground block mb-1 uppercase tracking-wider">{t('ai_recommend', 'Recommendation')}</span>
-                <span className="text-xs font-bold text-teal-400">{aiInsight.recommendation}</span>
-              </div>
-            </div>
-            {aiInsight.suggestedOrder && (
-              <div className="mt-4 space-y-2">
-                <div className="flex items-center gap-2 mb-2">
-                  <Target className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
-                    [{format(activeDate, 'M월 d일', { locale: ko })}] {t('ai_suggested_order', '추천 순서')}
-                  </span>
-                </div>
-                <div className="grid gap-2">
-                  {(Array.isArray(aiInsight.suggestedOrder) ? aiInsight.suggestedOrder : aiInsight.suggestedOrder.split('\n')).map((step, idx) => (
-                    <div key={idx} className="flex items-start gap-3 bg-white/5 p-3 rounded-xl border border-white/5 hover:border-primary/30 transition-colors group/step">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary border border-primary/20 group-hover/step:bg-primary group-hover/step:text-white transition-all">
-                        {idx + 1}
-                      </span>
-                      <p className="text-xs text-foreground leading-snug pt-0.5">
-                        {step.replace(/^\d+\.\s*/, '').replace(/^- \s*/, '')}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-              AI가 당신의 할 일을 분석하여 맞춤형 인사이트와 최적의 스케줄을 제안합니다.
-            </p>
-            <button
-              onClick={handleAIAnalysis}
-              disabled={isAnalyzing}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-bold text-sm shadow-lg shadow-cyan-500/20 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {isAnalyzing ? (
-                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  {t('ai_start_analysis', '분석 시작하기')}
-                </>
-              )}
-            </button>
-          </div>
-        )}
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-2xl p-5 shadow-xl">
            <h3 className="text-sm text-muted-foreground mb-1">{t('stats_total_progress')}</h3>
@@ -1805,7 +1271,7 @@ function StatisticsView({ tasks, toggleTask, handleAIAnalysis, isAnalyzing, aiIn
                 <div 
                   key={i} 
                   className="group relative cursor-pointer"
-                  onClick={() => setActiveDate(day.date)}
+                  onClick={() => setSelectedDate(day.date)}
                 >
                   <div className="aspect-[4/5] rounded-xl bg-secondary/30 border border-border/50 relative overflow-hidden transition-all hover:scale-105 flex flex-col justify-end">
                     {/* Vertical Progress Bar Fill */}
@@ -1847,17 +1313,17 @@ function StatisticsView({ tasks, toggleTask, handleAIAnalysis, isAnalyzing, aiIn
          </div>
 
          {/* Detailed View for Selected Date */}
-         {activeDate && (
+         {selectedDate && (
            <div className="mt-8 pt-6 border-t border-border/50 animate-in slide-in-from-bottom-4">
              <div className="flex items-center justify-between mb-4">
                 <h4 className="font-bold text-foreground">
-                  {new Intl.DateTimeFormat(i18n.language, { month: 'numeric', day: 'numeric', weekday: 'long' }).format(activeDate)} {t('stats_scoreboard')}
+                  {new Intl.DateTimeFormat(i18n.language, { month: 'numeric', day: 'numeric', weekday: 'long' }).format(selectedDate)} {t('stats_scoreboard')}
                 </h4>
-                <button onClick={() => setActiveDate(null)} className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 bg-secondary rounded-md">{t('stats_close')}</button>
+                <button onClick={() => setSelectedDate(null)} className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 bg-secondary rounded-md">{t('stats_close')}</button>
              </div>
              <div className="space-y-3">
                {(() => {
-                  const targetDay = stats.find(s => isSameDay(s.date, activeDate));
+                  const targetDay = stats.find(s => isSameDay(s.date, selectedDate));
                   if (!targetDay || targetDay.tasks.filter(t => t.completed).length === 0) {
                      return <div className="text-center py-8 text-muted-foreground bg-secondary/30 rounded-xl">{t('stats_no_records_day')}</div>;
                   }

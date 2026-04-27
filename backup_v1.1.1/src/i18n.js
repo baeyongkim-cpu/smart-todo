@@ -131,13 +131,7 @@ const resources = {
       "reset_repeating_task_title": "반복 업무 초기화",
       "reset_repeating_task_msg": "'{{text}}'의 향후 일정을 초기화하시겠습니까?",
       "btn_reset": "초기화",
-      "label_repeat_pattern_monthly": "반복할 날짜 (매월 {{day}}일)",
-      "ai_analysis_title": "AI 생산성 분석",
-      "ai_peak_time": "최고 집중 시간",
-      "ai_recommend": "오늘의 조언",
-      "ai_reanalyze": "다시 분석하기",
-      "ai_start_analysis": "분석 시작하기",
-      "ai_no_tasks": "분석할 데이터가 없습니다. 먼저 할 일을 등록해보세요."
+      "label_repeat_pattern_monthly": "반복할 날짜 (매월 {{day}}일)"
     }
   },
   en: {
@@ -268,13 +262,7 @@ const resources = {
       "reset_repeating_task_title": "Reset repeating task",
       "reset_repeating_task_msg": "Do you want to reset future schedules for '{{text}}'?",
       "btn_reset": "Reset",
-      "label_repeat_pattern_monthly": "Repeat date (Monthly {{day}}th)",
-      "ai_analysis_title": "AI Productivity Analysis",
-      "ai_peak_time": "Peak Focus",
-      "ai_recommend": "Daily Advice",
-      "ai_reanalyze": "Re-analyze",
-      "ai_start_analysis": "Start Analysis",
-      "ai_no_tasks": "No data to analyze. Please add some tasks first."
+      "label_repeat_pattern_monthly": "Repeat date (Monthly {{day}}th)"
     }
   }
 };
