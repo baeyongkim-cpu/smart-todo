@@ -1151,34 +1151,7 @@ export function SmartTodo() {
                        </div>
                      </div>
 
-                      {/* AI API Key Setting */}
-                      <div className="mb-6">
-                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 block">AI 설정</label>
-                        <div className="bg-secondary/20 p-4 rounded-2xl border border-border/50 space-y-3">
-                          <div className="relative">
-                            <Bot className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
-                            <input 
-                              type="password"
-                              placeholder="Gemini API Key 입력"
-                              defaultValue={localStorage.getItem('user_gemini_api_key') || ''}
-                              onChange={(e) => {
-                                const val = e.target.value.trim();
-                                if (val) {
-                                  localStorage.setItem('user_gemini_api_key', val);
-                                } else {
-                                  localStorage.removeItem('user_gemini_api_key');
-                                }
-                              }}
-                              className="w-full bg-background border border-border/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/50"
-                            />
-                          </div>
-                          <p className="text-[10px] text-muted-foreground leading-tight px-1">
-                            외부 배포 환경에서 AI가 작동하지 않을 경우, 직접 API 키를 입력하여 저장할 수 있습니다.
-                          </p>
-                        </div>
-                      </div>
-
-                     {/* Management Link */}
+                      {/* Management Link */}
                      <div className="pt-2 border-t border-border/50">
                         <button 
                            onClick={() => {
