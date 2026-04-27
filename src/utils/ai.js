@@ -64,15 +64,16 @@ export const quickAddTasksWithAI = async (input, language = 'ko') => {
 };
 
 export const analyzeTasksWithAI = async (tasks, language = 'ko') => {
+  const userKey = localStorage.getItem('user_gemini_api_key');
   const envKey = import.meta.env.VITE_GEMINI_API_KEY;
-  const API_KEY = envKey?.trim();
+  const API_KEY = (userKey || envKey)?.trim();
   const isKorean = language && language.startsWith('ko');
   
   if (!API_KEY) {
-    console.error("DEBUG: VITE_GEMINI_API_KEY is missing. env exists:", !!import.meta.env);
+    console.error("DEBUG: API Key missing. userKey exists:", !!userKey, "env exists:", !!import.meta.env.VITE_GEMINI_API_KEY);
     throw new Error(isKorean 
-      ? "AI API 키를 찾을 수 없습니다. 설정 또는 환경 변수(.env)를 확인해주세요. (PWA 캐시 문제일 수 있으니 앱을 새로고침해보세요)" 
-      : "AI API Key Missing. Please check your .env or settings. (Try refreshing the app if this is a PWA issue)");
+      ? "AI API 키를 찾을 수 없습니다. 설정 메뉴에서 API 키를 직접 입력하거나 환경 변수(.env)를 확인해주세요." 
+      : "AI API Key Missing. Please enter your API key in Settings or check environment variables.");
   }
 
   const prompt = `
