@@ -279,7 +279,7 @@ export const useTasks = () => {
   const deleteTask = async (id) => {
     try {
       // 1. 상태에서 즉시 제거 및 추적 시작 (UI 반응성 + 동기화 충돌 방지)
-      recentlyModified.current.add(id);
+      recentlyModified.current.set(id, Date.now());
       setTasks(prev => prev.filter(t => t.id !== id));
       
       // 2. DB 삭제 (비동기)
