@@ -60,14 +60,15 @@ export const useTasks = () => {
       if (!isMounted) return;
 
       channel = supabase
-        .channel('tasks-realtime-sync')
+        .channel(`tasks-sync-${user.id}`)
         .on(
           'postgres_changes',
           {
             event: '*', 
             schema: 'public',
-            table: 'tasks',
-            filter: `user_id=eq.${user.id}`
+            table: 'tasks'
+            // Removing filter for DELETE support: Supabase DELETE payloads only contain ID by default.
+            // With a filter, DELETE events are blocked because the 'old' record lacks 'user_id'.
           },
           (payload) => {
             if (!isMounted) return;
