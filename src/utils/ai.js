@@ -82,11 +82,12 @@ export const analyzeTasksWithAI = async (tasks, language = 'ko') => {
     Language: ${isKorean ? 'Korean' : 'English'}
     
     Task:
-    1. Provide an "efficiencyScore" (0-100)
-    2. Provide a short "insight"
-    3. Identify "peakTime"
-    4. Provide a "recommendation"
-    5. Suggest a "suggestedOrder" (numbered list)
+    1. Provide an "efficiencyScore" (0-100) based strictly on: (Completed Tasks / Total Tasks) * 80 + (Priority Weighting) * 20.
+    2. Provide a short "insight" about the user's current productivity pattern.
+    3. Identify "peakTime" when the user is most active.
+    4. Provide a "recommendation" - a practical tip to improve focus.
+    5. IMPORTANT: Identify all tasks where "completed" is false. Suggest a specific, prioritized execution order ONLY for these remaining tasks.
+    Format for suggestedOrder: Output ONLY a numbered list where each line is "Number. Task Name (Brief logic/tip)". DO NOT include completed tasks.
     
     Return ONLY a valid JSON object with: efficiencyScore, insight, peakTime, recommendation, suggestedOrder.
   `;
