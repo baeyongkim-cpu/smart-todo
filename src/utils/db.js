@@ -185,7 +185,6 @@ export const loadTasks = async () => {
     
     // 로그인이 안 되어 있다면 로컬 캐시만 반환하고 절대 덮어쓰지 않음
     if (!user) {
-      console.log('로그인 전: 로컬 데이터를 유지합니다.');
       const local = await localforage.getItem('tasks');
       return local || [];
     }

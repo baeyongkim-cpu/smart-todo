@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { isToday, isTomorrow, isBefore, startOfDay, addDays } from 'date-fns';
+import { startOfDay, addDays } from 'date-fns';
 import { loadTasks, saveTasks, saveOneTask, deleteTaskDB, clearAllTasksDB, clearRepeatingTasksDB, clearAllIncompleteTasksDB, supabase } from '../utils/db';
 
 export const useTasks = () => {
@@ -72,11 +72,9 @@ export const useTasks = () => {
           (payload) => {
             if (!isMounted) return;
             const eventType = payload.eventType;
-            console.log(`[Realtime Event] ${eventType}:`, payload);
 
             const targetId = eventType === 'DELETE' ? payload.old?.id : payload.new?.id;
             if (targetId && recentlyModified.current.has(targetId)) {
-              console.log(`[Realtime] ${targetId} 최근 수정됨 → 중복 방지를 위해 무시`);
               return;
             }
 
@@ -114,7 +112,6 @@ export const useTasks = () => {
         )
         .subscribe((status) => {
           if (isMounted) {
-             console.log(`[Realtime Status] ${status}`);
              setSyncStatus(status);
           }
         });
@@ -130,7 +127,6 @@ export const useTasks = () => {
         const inactiveDuration = Date.now() - lastActiveTime;
         // 30초 이상 비활성 상태였을 때만 서버에서 새로고침
         if (inactiveDuration > 30000) {
-          console.log('장시간 비활성 후 복귀: 데이터 동기화');
           const freshTasks = await loadTasks();
           if (isMounted) setTasks(freshTasks);
         }
@@ -382,18 +378,6 @@ export const useTasks = () => {
     }
   };
 
-  // Grouped Tasks for backward compatibility if needed
-  const groupedTasks = useMemo(() => {
-    const today = startOfDay(new Date());
-    const tomorrow = addDays(today, 1);
-
-    return {
-      overdue: tasks.filter(t => !t.completed && isBefore(startOfDay(new Date(t.date || t.createdAt)), today)),
-      today: tasks.filter(t => isToday(new Date(t.date || t.createdAt))),
-      tomorrowCount: tasks.filter(t => isTomorrow(new Date(t.date || t.createdAt))).length,
-      allToday: tasks.filter(t => isToday(new Date(t.date || t.createdAt))),
-    };
-  }, [tasks]);
 
   const progress = useMemo(() => {
     const todayTasks = tasks; // Base progress on all active tasks or today's tasks

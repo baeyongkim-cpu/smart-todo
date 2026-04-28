@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Plus, Check, Trash2, Clock, Zap, Home, Calendar as CalendarIcon, Star, Repeat, Timer, BarChart, ChevronLeft, ChevronRight, Settings, Palette, Type, Heart, Smile, Coffee, Target, Lightbulb, LogOut, CalendarX, Briefcase, User, Globe, Tag, Sparkles, Bot, ShieldCheck, HelpCircle, Bell, BellOff, RefreshCcw } from "lucide-react";
 import { supabase } from "../utils/db";
 import { cn } from "../lib/utils";
+import ErrorBoundary from "./ErrorBoundary";
 import { useTasks } from "../hooks/useTasks";
 import { startOfDay, addDays, subDays, isSameDay, format, startOfMonth, endOfMonth, eachDayOfInterval, endOfWeek, startOfWeek } from "date-fns";
 import { ko, enUS } from "date-fns/locale";
@@ -951,6 +952,7 @@ export function SmartTodo() {
             </div>
           </>
         ) : (
+          <ErrorBoundary name="StatisticsView" fallbackMessage="통계를 불러오는 중 오류가 발생했습니다.">
           <StatisticsView 
             tasks={tasks} 
             toggleTask={toggleTask} 
@@ -962,6 +964,7 @@ export function SmartTodo() {
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
           />
+          </ErrorBoundary>
         )}
       </div>
 
@@ -1597,6 +1600,7 @@ export function SmartTodo() {
                 </button>
               </div>
 
+              <ErrorBoundary name="CalendarPicker" fallbackMessage="달력을 불러올 수 없습니다.">
               <CalendarPicker 
                 selectedDate={selectedDate} 
                 onSelect={(date) => {
@@ -1604,6 +1608,7 @@ export function SmartTodo() {
                   setIsCalendarOpen(false);
                 }} 
               />
+              </ErrorBoundary>
             </motion.div>
           </div>
         )}
