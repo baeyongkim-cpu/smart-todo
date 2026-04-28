@@ -137,7 +137,12 @@ const resources = {
       "ai_recommend": "오늘의 조언",
       "ai_reanalyze": "다시 분석하기",
       "ai_start_analysis": "분석 시작하기",
-      "ai_no_tasks": "분석할 데이터가 없습니다. 먼저 할 일을 등록해보세요."
+      "ai_no_tasks": "분석할 데이터가 없습니다. 먼저 할 일을 등록해보세요.",
+      "ai_efficiency_score": "생산성 점수",
+      "ai_score_desc": "할 일 완료 패턴과 소요 시간, 카테고리별 비중을 분석하여 산출한 현재 생산성 지수입니다.",
+      "ai_description": "AI가 당신의 할 일을 분석하여 맞춤형 인사이트와 최적의 스케줄을 제안합니다.",
+      "ai_restricted_message": "AI 분석 기능은 준비 중입니다.",
+      "ai_suggested_order_prefix": "추천 순서"
     }
   },
   en: {
@@ -274,7 +279,12 @@ const resources = {
       "ai_recommend": "Daily Advice",
       "ai_reanalyze": "Re-analyze",
       "ai_start_analysis": "Start Analysis",
-      "ai_no_tasks": "No data to analyze. Please add some tasks first."
+      "ai_no_tasks": "No data to analyze. Please add some tasks first.",
+      "ai_efficiency_score": "Productivity Score",
+      "ai_score_desc": "A productivity index calculated by analyzing task completion patterns, time spent, and category distribution.",
+      "ai_description": "AI analyzes your tasks to provide personalized insights and optimal scheduling suggestions.",
+      "ai_restricted_message": "AI analysis feature is coming soon.",
+      "ai_suggested_order_prefix": "Suggested Order"
     }
   }
 };

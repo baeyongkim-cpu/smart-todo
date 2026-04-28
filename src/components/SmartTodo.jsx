@@ -1849,12 +1849,12 @@ function StatisticsView({ tasks, toggleTask, handleAIAnalysis, isAnalyzing, aiIn
               <span className="text-3xl font-bold text-cyan-400">{aiInsight.efficiencyScore}</span>
               <div className="flex items-center gap-1 pb-1">
                 <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">
-                  {t('ai_efficiency_score', '생산성 점수')}
+                  {t('ai_efficiency_score')}
                 </span>
                 <div className="group/tooltip relative">
                   <HelpCircle className="h-3 w-3 text-muted-foreground/50 cursor-help hover:text-cyan-400 transition-colors" />
                   <div className="absolute left-0 bottom-full mb-2 w-52 p-3 bg-zinc-900 text-white text-[10px] rounded-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity z-50 shadow-2xl border border-white/10 leading-normal">
-                    {t('ai_score_desc', '할 일 완료 패턴과 소요 시간, 카테고리별 비중을 분석하여 산출한 현재 생산성 지수입니다.')}
+                    {t('ai_score_desc')}
                   </div>
                 </div>
               </div>
@@ -1875,7 +1875,7 @@ function StatisticsView({ tasks, toggleTask, handleAIAnalysis, isAnalyzing, aiIn
                 <div className="flex items-center gap-2 mb-2">
                   <Target className="h-3.5 w-3.5 text-primary" />
                   <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
-                    [{format(activeDate, 'M월 d일', { locale: ko })}] {t('ai_suggested_order', '추천 순서')}
+                    [{format(activeDate, i18n.language.startsWith('ko') ? 'M월 d일' : 'MMM d', { locale: i18n.language.startsWith('ko') ? ko : enUS })}] {t('ai_suggested_order_prefix')}
                   </span>
                 </div>
                 <div className="grid gap-2">
@@ -1896,7 +1896,7 @@ function StatisticsView({ tasks, toggleTask, handleAIAnalysis, isAnalyzing, aiIn
         ) : (
           <div className="py-4">
             <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-              AI가 당신의 할 일을 분석하여 맞춤형 인사이트와 최적의 스케줄을 제안합니다.
+              {t('ai_description')}
             </p>
             <button
               onClick={handleAIAnalysis}
