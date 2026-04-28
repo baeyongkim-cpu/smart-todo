@@ -1467,7 +1467,7 @@ export function SmartTodo() {
                   <div className="h-8 w-8 rounded-xl bg-cyan-400/10 flex items-center justify-center">
                     <Clock className="h-4 w-4 text-cyan-400" />
                   </div>
-                  <h3 className="text-lg font-bold text-foreground">{t('select_time', '시간 선택')}</h3>
+                  <h3 className="text-lg font-bold text-foreground">{t('select_time')}</h3>
                 </div>
                 <button 
                   onClick={() => setIsTimeModalOpen(false)} 
@@ -1482,11 +1482,11 @@ export function SmartTodo() {
                 {/* Labels Header */}
                 <div className="flex gap-4 justify-center items-center w-full px-2">
                   <div className="w-20 text-center">
-                    <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-60">{t('hour', '시')}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-60">{t('hour')}</span>
                   </div>
                   <div className="w-4" /> {/* Spacer for colon area */}
                   <div className="w-20 text-center">
-                    <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-60">{t('minute', '분')}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-60">{t('minute')}</span>
                   </div>
                 </div>
 
@@ -1561,7 +1561,7 @@ export function SmartTodo() {
                 onClick={() => setIsTimeModalOpen(false)}
                 className="w-full py-4 bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-black text-sm rounded-[20px] shadow-xl shadow-cyan-500/20 active:scale-[0.98] transition-all"
               >
-                {t('confirm', '확인')}
+                {t('confirm')}
               </button>
             </motion.div>
           </div>

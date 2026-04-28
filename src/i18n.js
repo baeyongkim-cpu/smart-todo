@@ -152,7 +152,11 @@ const resources = {
       "test_alarm_body": "알람과 소리가 정상적으로 작동합니다! (3초 후 자동 닫힘)",
       "allow_notifications_first": "먼저 알림 권한을 허용해주세요.",
       "test_alarm": "알람 작동 테스트",
-      "stop_alarm": "알람 끄기"
+      "stop_alarm": "알람 끄기",
+      "select_time": "시간 선택",
+      "hour": "시",
+      "minute": "분",
+      "confirm": "확인"
     }
   },
   en: {
@@ -304,7 +308,11 @@ const resources = {
       "test_alarm_body": "Alarm and sound are working properly! (Closes in 3s)",
       "allow_notifications_first": "Please allow notification permission first.",
       "test_alarm": "Test Alarm",
-      "stop_alarm": "Stop Alarm"
+      "stop_alarm": "Stop Alarm",
+      "select_time": "Select Time",
+      "hour": "Hour",
+      "minute": "Minute",
+      "confirm": "Confirm"
     }
   }
 };
