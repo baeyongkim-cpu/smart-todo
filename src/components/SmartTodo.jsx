@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { Plus, Check, Trash2, Clock, Zap, Home, Calendar as CalendarIcon, Star, Repeat, Timer, BarChart, ChevronLeft, ChevronRight, Settings, Palette, Type, Heart, Smile, Coffee, Target, Lightbulb, LogOut, CalendarX, Briefcase, User, Globe, Tag, Sparkles, Bot, ShieldCheck, HelpCircle, Bell, BellOff, RefreshCcw } from "lucide-react";
+import { Plus, Check, Trash2, Clock, Zap, Home, Calendar as CalendarIcon, Star, Repeat, Timer, BarChart, ChevronLeft, ChevronRight, Settings, Palette, Type, Heart, Smile, Coffee, Target, Lightbulb, LogOut, CalendarX, Briefcase, User, Globe, Tag, Sparkles, Bot, ShieldCheck, HelpCircle, Bell, BellOff } from "lucide-react";
 import { supabase } from "../utils/db";
 import { cn } from "../lib/utils";
 import ErrorBoundary from "./ErrorBoundary";
@@ -162,13 +162,13 @@ export function SmartTodo() {
 
   const requestNotificationPermission = async () => {
     if (!("Notification" in window)) {
-      alert(t('notif_not_supported', '이 브라우저는 알림을 지원하지 않습니다.'));
+      alert(t('notif_not_supported'));
       return;
     }
     const permission = await Notification.requestPermission();
     if (permission === "granted") {
-      new Notification(t('notif_title', '알림 설정 완료!'), {
-        body: t('notif_body', '이제 할 일 시간에 맞춰 알림을 보내드릴게요.'),
+      new Notification(t('notif_title'), {
+        body: t('notif_body'),
       });
       // UI 갱신을 위해 강제 리렌더링 유도 (알람 아이콘 상태 반영)
       window.dispatchEvent(new Event('storage'));
@@ -235,7 +235,7 @@ export function SmartTodo() {
         setLastNotifiedMinute(currentHHmm);
 
         // 3. Browser Notification (Background support)
-        const title = `[${currentHHmm}] ${t('task_alarm_title', '할 일 알림')}`;
+        const title = `[${currentHHmm}] ${t('task_alarm_title')}`;
         const options = {
           body: matchedTask.text,
           icon: "/favicon.ico",
@@ -759,7 +759,7 @@ export function SmartTodo() {
                   {/* Alarm Selection */}
                   <div className="flex-1 min-w-[140px] w-full">
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
-                      <Bell className={cn("h-3 w-3", isAlarmEnabled ? "text-cyan-400" : "")}/> {t('alarm', '알람 설정')}
+                      <Bell className={cn("h-3 w-3", isAlarmEnabled ? "text-cyan-400" : "")}/> {t('alarm')}
                     </span>
                     <div className="flex items-center gap-2 bg-background border border-border/70 rounded-xl p-1 shadow-sm">
                       <button
@@ -1157,16 +1157,6 @@ export function SmartTodo() {
                       {/* Management Link */}
                      <div className="pt-2 border-t border-border/50">
                         <button 
-                           onClick={() => {
-                             if (window.confirm(t('confirm_refresh', '앱을 새로고침하여 최신 버전을 불러올까요?'))) {
-                               window.location.reload(true);
-                             }
-                           }}
-                           className="w-full py-3 rounded-xl bg-primary/10 text-primary text-sm font-bold hover:bg-primary/20 transition-all flex items-center justify-center gap-2 border border-primary/20 mb-3"
-                         >
-                           <RefreshCcw className="h-4 w-4" /> {t('refresh_app', '앱 최신버전으로 업데이트')}
-                         </button>
-                         <button 
                            onClick={() => setSettingsView('reset')}
                           className="w-full py-3 rounded-xl bg-secondary/50 text-foreground text-sm font-bold hover:bg-secondary transition-all flex items-center justify-center gap-2"
                         >
@@ -1189,9 +1179,9 @@ export function SmartTodo() {
                           onClick={() => {
                             playAlarmSound();
                             if (Notification.permission === 'granted') {
-                               const title = "FocusFlow 알람 테스트";
+                               const title = t('test_alarm_title');
                                const options = {
-                                 body: "알람과 소리가 정상적으로 작동합니다! (3초 후 자동 닫힘)",
+                                 body: t('test_alarm_body'),
                                  icon: "/favicon.ico",
                                  badge: "/favicon.ico",
                                  vibrate: [300, 100, 300, 100, 300],
@@ -1204,14 +1194,14 @@ export function SmartTodo() {
                                  setTimeout(() => n.close(), 3000);
                                }
                             } else {
-                              alert(t('allow_notifications_first', '먼저 알림 권한을 허용해주세요.'));
+                              alert(t('allow_notifications_first'));
                             }
                           }}
                           className="w-full flex items-center gap-3 p-4 rounded-2xl bg-cyan-500/10 hover:bg-cyan-500/20 transition-all border border-cyan-500/30 text-cyan-400 group mb-4"
                         >
                           <Bell className="h-5 w-5 animate-bounce" />
                           <div className="text-left">
-                            <span className="text-sm font-bold block">{t('test_alarm', '알람 작동 테스트')}</span>
+                            <span className="text-sm font-bold block">{t('test_alarm')}</span>
                             <span className="text-[10px] opacity-70">소리와 진동을 즉시 확인합니다.</span>
                           </div>
                         </button>
@@ -1689,7 +1679,7 @@ export function SmartTodo() {
                 className="w-full py-6 bg-primary text-primary-foreground font-black text-xl rounded-2xl shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group"
               >
                 <BellOff className="h-7 w-7 group-hover:rotate-12 transition-transform" />
-                {t('stop_alarm', '알람 끄기')}
+                {t('stop_alarm')}
               </button>
             </motion.div>
           </motion.div>

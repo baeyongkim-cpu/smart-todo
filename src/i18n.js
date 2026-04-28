@@ -142,7 +142,17 @@ const resources = {
       "ai_score_desc": "할 일 완료 패턴과 소요 시간, 카테고리별 비중을 분석하여 산출한 현재 생산성 지수입니다.",
       "ai_description": "AI가 당신의 할 일을 분석하여 맞춤형 인사이트와 최적의 스케줄을 제안합니다.",
       "ai_restricted_message": "AI 분석 기능은 준비 중입니다.",
-      "ai_suggested_order_prefix": "추천 순서"
+      "ai_suggested_order_prefix": "추천 순서",
+      "notif_not_supported": "이 브라우저는 알림을 지원하지 않습니다.",
+      "notif_title": "알림 설정 완료!",
+      "notif_body": "이제 할 일 시간에 맞춰 알림을 보내드릴게요.",
+      "task_alarm_title": "할 일 알림",
+      "alarm": "알람 설정",
+      "test_alarm_title": "Smart Todo 알람 테스트",
+      "test_alarm_body": "알람과 소리가 정상적으로 작동합니다! (3초 후 자동 닫힘)",
+      "allow_notifications_first": "먼저 알림 권한을 허용해주세요.",
+      "test_alarm": "알람 작동 테스트",
+      "stop_alarm": "알람 끄기"
     }
   },
   en: {
@@ -284,7 +294,17 @@ const resources = {
       "ai_score_desc": "A productivity index calculated by analyzing task completion patterns, time spent, and category distribution.",
       "ai_description": "AI analyzes your tasks to provide personalized insights and optimal scheduling suggestions.",
       "ai_restricted_message": "AI analysis feature is coming soon.",
-      "ai_suggested_order_prefix": "Suggested Order"
+      "ai_suggested_order_prefix": "Suggested Order",
+      "notif_not_supported": "This browser does not support notifications.",
+      "notif_title": "Notification Set!",
+      "notif_body": "We will send you a notification at your task time.",
+      "task_alarm_title": "Task Alarm",
+      "alarm": "Set Alarm",
+      "test_alarm_title": "Smart Todo Alarm Test",
+      "test_alarm_body": "Alarm and sound are working properly! (Closes in 3s)",
+      "allow_notifications_first": "Please allow notification permission first.",
+      "test_alarm": "Test Alarm",
+      "stop_alarm": "Stop Alarm"
     }
   }
 };
