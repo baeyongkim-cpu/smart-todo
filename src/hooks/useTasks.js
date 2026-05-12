@@ -423,8 +423,10 @@ export const useTasks = () => {
     toggleTask,
     deleteTask,
     resetAllTasks,
-    clearIncompleteTasks: resetAllIncompleteTasks,
-    clearRepeatingTasks: resetAllRepeatingIncompleteTasks,
+    // 이름을 SmartTodo.jsx의 구조분해 이름과 통일
+    resetAllIncompleteTasks,
+    resetAllRepeatingIncompleteTasks,
+    resetRepeatingTask,              // 개별 반복 업무 초기화 (누락 수정)
     bulkAddTasks: persistTasks,
     loadTasksFromDB: loadTasks,
     progress,
