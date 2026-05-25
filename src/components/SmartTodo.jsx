@@ -349,12 +349,25 @@ export function SmartTodo() {
   };
 
   const handleUpgrade = async () => {
-    const productId = import.meta.env.VITE_DODO_PRODUCT_ID || "pdp_123456";
-    const email = encodeURIComponent(userEmail || "");
-    const redirectUrl = encodeURIComponent(window.location.origin);
-    const checkoutUrl = `https://checkout.dodopayments.com/buy/${productId}?quantity=1&redirect_url=${redirectUrl}&customer_email=${email}`;
-    window.open(checkoutUrl, '_blank');
-    setShowUpgradeModal(false);
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.checkout_url) {
+        window.open(data.checkout_url, '_blank');
+        setShowUpgradeModal(false);
+      } else {
+        throw new Error(data.error || "Failed to create checkout session");
+      }
+    } catch (error) {
+      console.error("Upgrade error:", error);
+      alert("결제창을 여는데 실패했습니다: " + error.message);
+    }
   };
 
   const today = startOfDay(new Date());
