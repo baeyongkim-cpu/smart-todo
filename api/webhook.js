@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import DodoPayments from 'dodopayments';
 import { createClient } from '@supabase/supabase-js';
 
 // Vercel에서 raw body를 받기 위한 설정
@@ -15,65 +15,6 @@ async function getRawBody(readable) {
     chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
   }
   return Buffer.concat(chunks).toString('utf8');
-}
-
-function verifyWebhook(payloadRaw, headers, secret) {
-  const webhookId = headers['webhook-id'];
-  const timestamp = headers['webhook-timestamp'];
-  const signatureHeader = headers['webhook-signature'];
-
-  if (!webhookId || !timestamp || !signatureHeader) {
-    return false;
-  }
-
-  const signedContent = `${webhookId}.${timestamp}.${rawBodyPayloadCleanup(payloadRaw)}`;
-
-  const signatures = signatureHeader.split(' ').map(sig => {
-    const parts = sig.split(',');
-    if (parts.length === 2 && parts[0] === 'v1') {
-      return parts[1];
-    }
-    return null;
-  }).filter(Boolean);
-
-  if (signatures.length === 0) {
-    return false;
-  }
-
-  const expectedHex = crypto
-    .createHmac('sha256', secret)
-    .update(signedContent)
-    .digest('hex');
-
-  const expectedBase64 = crypto
-    .createHmac('sha256', secret)
-    .update(signedContent)
-    .digest('base64');
-
-  for (const sig of signatures) {
-    try {
-      const sigBuffer = Buffer.from(sig);
-      const hexBuffer = Buffer.from(expectedHex);
-      const base64Buffer = Buffer.from(expectedBase64);
-
-      if (sigBuffer.length === hexBuffer.length && crypto.timingSafeEqual(sigBuffer, hexBuffer)) {
-        return true;
-      }
-      if (sigBuffer.length === base64Buffer.length && crypto.timingSafeEqual(sigBuffer, base64Buffer)) {
-        return true;
-      }
-    } catch (e) {
-      // ignore
-    }
-  }
-
-  return false;
-}
-
-// Helper to ensure payload raw bytes are clean
-function rawBodyPayloadCleanup(payload) {
-  // standard-webhooks signatures verify the exact string payload as received
-  return payload;
 }
 
 export default async function handler(req, res) {
@@ -95,18 +36,14 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to read request payload' });
   }
 
-  // Webhook signature verification
-  const isValid = verifyWebhook(rawBody, req.headers, secret);
-  if (!isValid) {
-    console.warn('Invalid signature for webhook event');
-    return res.status(401).json({ error: 'Invalid signature' });
-  }
-
   let event;
   try {
-    event = JSON.parse(rawBody);
+    // DodoPayments 클라이언트를 초기화하여 SDK 내장 웹훅 검증 사용
+    const client = new DodoPayments({ bearerToken: process.env.DODO_PAYMENTS_API_KEY || 'dummy_token' });
+    event = client.webhooks.unwrap(rawBody, { headers: req.headers, key: secret });
   } catch (err) {
-    return res.status(400).json({ error: 'Invalid JSON body' });
+    console.warn('Webhook verification failed:', err.message);
+    return res.status(401).json({ error: 'Invalid signature or payload' });
   }
 
   const eventType = event.type;
