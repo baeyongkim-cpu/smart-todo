@@ -1,10 +1,5 @@
 import DodoPayments from 'dodopayments';
 
-const client = new DodoPayments({
-  bearerToken: process.env.DODO_PAYMENTS_API_KEY,
-  environment: process.env.NODE_ENV === 'production' && process.env.DODO_PAYMENTS_API_KEY?.includes('live_') ? 'live_mode' : 'test_mode',
-});
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -12,6 +7,16 @@ export default async function handler(req, res) {
   }
 
   try {
+    const apiKey = process.env.DODO_PAYMENTS_API_KEY;
+    if (!apiKey) {
+      throw new Error("DODO_PAYMENTS_API_KEY is not configured on the server.");
+    }
+
+    const client = new DodoPayments({
+      bearerToken: apiKey,
+      environment: process.env.NODE_ENV === 'production' && apiKey.includes('live_') ? 'live_mode' : 'test_mode',
+    });
+
     const { email } = req.body;
     const origin = req.headers.origin || 'http://localhost:5173';
 
