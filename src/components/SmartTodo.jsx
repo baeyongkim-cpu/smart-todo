@@ -78,6 +78,7 @@ export function SmartTodo() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiInsight, setAiInsight] = useState(null);
+  const isPro = userProfile?.is_premium === true;
 
   useEffect(() => {
     const loadUser = async () => {
@@ -100,6 +101,11 @@ export function SmartTodo() {
 
   const handleAddTodo = async () => {
     if (!newTodo.trim() || isComposing) return;
+    
+    if (!isPro && selectedDateTasks.length >= 10) {
+      setShowUpgradeModal(true);
+      return;
+    }
     
     await addTask({
       text: newTodo,
@@ -128,15 +134,8 @@ export function SmartTodo() {
 
 
 
-  const ALLOWED_AI_EMAIL = "ditto0038@naver.com";
-
   const handleAIAnalysis = async () => {
-    if (userEmail !== ALLOWED_AI_EMAIL) {
-      alert(t('ai_access_denied', 'AI 기능은 현재 특정 계정에서만 사용 가능합니다.'));
-      return;
-    }
-
-    if (!userProfile?.is_premium) {
+    if (!isPro) {
       setShowUpgradeModal(true);
       return;
     }
@@ -308,7 +307,7 @@ export function SmartTodo() {
   };
 
   const handleAIQuickAdd = async (input) => {
-    if (userEmail !== "ditto0038@naver.com") {
+    if (!isPro) {
       // 일반 입력으로 처리
       await addTask({
         text: input,
@@ -350,9 +349,11 @@ export function SmartTodo() {
   };
 
   const handleUpgrade = async () => {
-    // 실제 결제 로직 대신 테스트용으로 프리미엄 전환
-    await updateUserProfile({ is_premium: true });
-    setUserProfile(prev => ({ ...prev, is_premium: true }));
+    const productId = import.meta.env.VITE_DODO_PRODUCT_ID || "pdp_123456";
+    const email = encodeURIComponent(userEmail || "");
+    const redirectUrl = encodeURIComponent(window.location.origin);
+    const checkoutUrl = `https://checkout.dodopayments.com/buy/${productId}?quantity=1&redirect_url=${redirectUrl}&customer_email=${email}`;
+    window.open(checkoutUrl, '_blank');
     setShowUpgradeModal(false);
   };
 
@@ -431,6 +432,14 @@ export function SmartTodo() {
     let computedRepeat = type;
     if (type === 'days') computedRepeat = `days:${payload ? payload : '1,2,3,4,5'}`;
     if (type === 'monthly') computedRepeat = `monthly:${payload ? payload : '1'}`;
+
+    const currentRepeat = targetId === 'new' ? newTodoRepeat : (tasks.find(t => t.id === targetId)?.repeat || 'none');
+    const isActivatingRepeat = (currentRepeat === 'none' || !currentRepeat) && computedRepeat !== 'none';
+
+    if (!isPro && isActivatingRepeat && repeatingTaskGroups.length >= 2) {
+      setShowUpgradeModal(true);
+      return;
+    }
 
     if (targetId === 'new') {
       setNewTodoRepeat(computedRepeat);
@@ -959,10 +968,11 @@ export function SmartTodo() {
             handleAIAnalysis={handleAIAnalysis}
             isAnalyzing={isAnalyzing}
             aiInsight={aiInsight}
-            isPremium={userProfile?.is_premium}
+            isPremium={isPro}
             userEmail={userEmail}
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
+            setShowUpgradeModal={setShowUpgradeModal}
           />
           </ErrorBoundary>
         )}
@@ -1152,6 +1162,64 @@ export function SmartTodo() {
                            </button>
                          ))}
                        </div>
+                     </div>
+
+                     {/* Account Plan & Usage Info */}
+                     <div className="space-y-4 bg-secondary/20 p-4 rounded-2xl border border-border/50">
+                       <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-2">
+                           <ShieldCheck className="h-4 w-4 text-primary" />
+                           <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('plan_status')}</span>
+                         </div>
+                         <span className={cn(
+                           "text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider",
+                           isPro 
+                             ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20" 
+                             : "bg-zinc-800 text-zinc-400 border border-zinc-700/50"
+                         )}>
+                           {isPro ? t('plan_pro') : t('plan_free')}
+                         </span>
+                       </div>
+                       
+                       {!isPro && (
+                         <div className="space-y-3 pt-3 border-t border-border/20">
+                           <div className="space-y-1.5">
+                             <div className="flex justify-between text-[11px] text-muted-foreground">
+                               <span>{t('todo_usage')}</span>
+                               <span className="font-mono font-bold text-foreground">{selectedDateTasks.length} / 10</span>
+                             </div>
+                             <div className="h-1.5 rounded-full bg-secondary/80 overflow-hidden">
+                               <div 
+                                 className="h-full bg-gradient-to-r from-cyan-500 to-teal-500 transition-all duration-500" 
+                                 style={{ width: `${Math.min((selectedDateTasks.length / 10) * 100, 100)}%` }} 
+                               />
+                             </div>
+                           </div>
+
+                           <div className="space-y-1.5">
+                             <div className="flex justify-between text-[11px] text-muted-foreground">
+                               <span>{t('repeat_usage')}</span>
+                               <span className="font-mono font-bold text-foreground">{repeatingTaskGroups.length} / 2</span>
+                             </div>
+                             <div className="h-1.5 rounded-full bg-secondary/80 overflow-hidden">
+                               <div 
+                                 className="h-full bg-gradient-to-r from-cyan-500 to-teal-500 transition-all duration-500" 
+                                 style={{ width: `${Math.min((repeatingTaskGroups.length / 2) * 100, 100)}%` }} 
+                               />
+                             </div>
+                           </div>
+                           
+                           <button
+                             onClick={() => {
+                               setIsSettingsOpen(false);
+                               setShowUpgradeModal(true);
+                             }}
+                             className="w-full mt-1 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-xs font-bold shadow-lg shadow-cyan-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                           >
+                             {t('upgrade_pro_btn')}
+                           </button>
+                         </div>
+                       )}
                      </div>
 
                       {/* Management Link */}
@@ -1618,22 +1686,36 @@ export function SmartTodo() {
               <div className="h-20 w-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-primary/20">
                 <Sparkles className="h-10 w-10 text-primary" />
               </div>
-              <h3 className="text-2xl font-bold text-foreground mb-2">Upgrade to PRO</h3>
-              <p className="text-sm text-muted-foreground mb-8">
-                AI 분석, 프리미엄 테마, 무제한 데이터 동기화 등 모든 기능을 잠금 해제하세요.
-              </p>
+              <h3 className="text-2xl font-bold text-foreground mb-1">{t('upgrade_title')}</h3>
+              <p className="text-xs text-primary font-bold mb-4">{t('upgrade_price')}</p>
+              
+              <div className="text-left space-y-3 mb-8 bg-secondary/20 p-4 rounded-2xl border border-border/50">
+                <div className="flex items-start gap-2 text-xs text-foreground">
+                  <span className="text-primary font-bold">🚀</span>
+                  <span>{t('upgrade_benefit_1')}</span>
+                </div>
+                <div className="flex items-start gap-2 text-xs text-foreground">
+                  <span className="text-primary font-bold">🔁</span>
+                  <span>{t('upgrade_benefit_2')}</span>
+                </div>
+                <div className="flex items-start gap-2 text-xs text-foreground">
+                  <span className="text-primary font-bold">🧠</span>
+                  <span>{t('upgrade_benefit_3')}</span>
+                </div>
+              </div>
+
               <div className="space-y-3">
                 <button
                   onClick={handleUpgrade}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-bold shadow-lg shadow-cyan-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-bold shadow-lg shadow-cyan-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                 >
-                  프리미엄 시작하기
+                  {t('upgrade_pro_btn')}
                 </button>
                 <button
                   onClick={() => setShowUpgradeModal(false)}
-                  className="w-full py-3 rounded-2xl bg-secondary text-muted-foreground font-medium hover:text-foreground transition-all"
+                  className="w-full py-3 rounded-2xl bg-secondary text-muted-foreground font-medium hover:text-foreground transition-all cursor-pointer"
                 >
-                  나중에 하기
+                  {t('btn_cancel')}
                 </button>
               </div>
             </motion.div>
@@ -1750,7 +1832,7 @@ function CalendarPicker({ selectedDate, onSelect }) {
 }
 
 // --- Statistics Component Isolated ---
-function StatisticsView({ tasks, toggleTask, handleAIAnalysis, isAnalyzing, aiInsight, isPremium, userEmail, selectedDate: activeDate, setSelectedDate: setActiveDate }) {
+function StatisticsView({ tasks, toggleTask, handleAIAnalysis, isAnalyzing, aiInsight, isPremium, userEmail, selectedDate: activeDate, setSelectedDate: setActiveDate, setShowUpgradeModal }) {
   const { t, i18n } = useTranslation();
   const [timeframe, setTimeframe] = useState(14);
   const [mounted, setMounted] = useState(false);
@@ -1822,16 +1904,23 @@ function StatisticsView({ tasks, toggleTask, handleAIAnalysis, isAnalyzing, aiIn
           <div className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-cyan-400" />
             <h3 className="font-bold text-foreground">{t('ai_analysis_title', 'AI 생산성 분석')}</h3>
-            {userEmail === "ditto0038@naver.com" && !isPremium && <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-bold">PRO</span>}
+            {isPremium && <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-bold">PRO</span>}
           </div>
           <div className="text-[10px] font-medium text-muted-foreground bg-white/5 px-2 py-1 rounded-md border border-white/5">
             {format(activeDate, 'PPP', { locale: i18n.language === 'ko' ? ko : enUS })}
           </div>
         </div>
         
-        {userEmail !== "ditto0038@naver.com" ? (
-          <div className="py-4 text-center">
-            <p className="text-sm text-muted-foreground">{t('ai_restricted_message', 'AI 분석 기능은 준비 중입니다.')}</p>
+        {!isPremium ? (
+          <div className="py-6 text-center space-y-4">
+            <p className="text-sm text-muted-foreground">{t('ai_restricted_message')}</p>
+            <button
+              onClick={() => setShowUpgradeModal(true)}
+              className="py-2.5 px-4 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-all border border-primary/20 inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {t('upgrade_pro_btn')}
+            </button>
           </div>
         ) : aiInsight ? (
           <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
