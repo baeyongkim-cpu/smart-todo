@@ -168,7 +168,8 @@ const resources = {
       "select_time": "시간 선택",
       "hour": "시",
       "minute": "분",
-      "confirm": "확인"
+      "confirm": "확인",
+      "label_repeat_count": "반복 횟수 (최대 99회)"
     }
   },
   en: {
@@ -336,7 +337,8 @@ const resources = {
       "select_time": "Select Time",
       "hour": "Hour",
       "minute": "Minute",
-      "confirm": "Confirm"
+      "confirm": "Confirm",
+      "label_repeat_count": "Repeat Count (Max 99)"
     }
   }
 };

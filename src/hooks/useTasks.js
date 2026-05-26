@@ -193,10 +193,13 @@ export const useTasks = () => {
     const baseDate = new Date(taskObj.date || new Date().toISOString());
     const instances = [];
     
-    // Number of instances to pre-register
     let count = 1;
     if (taskObj.repeat !== 'none') {
-      count = taskObj.repeat.startsWith('monthly') ? 12 : 30; 
+      if (taskObj.repeatCount && taskObj.repeatCount > 0) {
+        count = Math.min(parseInt(taskObj.repeatCount, 10), 99);
+      } else {
+        count = taskObj.repeat.startsWith('monthly') ? 12 : 30; 
+      }
     }
 
     let currentDate = new Date(baseDate);

@@ -68,8 +68,9 @@ export function SmartTodo() {
   const hourScrollRef = useRef(null);
   const minuteScrollRef = useRef(null);
   
-  const [repeatModalState, setRepeatModalState] = useState({ isOpen: false, targetId: null, type: 'none', payload: '' });
+  const [repeatModalState, setRepeatModalState] = useState({ isOpen: false, targetId: null, type: 'none', payload: '', count: 30 });
   const [newTodoRepeat, setNewTodoRepeat] = useState("none"); // Default for new UI
+  const [newTodoRepeatCount, setNewTodoRepeatCount] = useState(30);
 
   const [completeModalState, setCompleteModalState] = useState({ isOpen: false, task: null, duration: 30 });
 
@@ -112,9 +113,9 @@ export function SmartTodo() {
       date: selectedDate.toISOString(),
       category: selectedCategory,
       priority: selectedPriority,
-      duration: parseInt(selectedDuration),
-      alarmTime: isAlarmEnabled ? selectedTime : null,
       repeat: newTodoRepeat,
+      repeatCount: newTodoRepeatCount,
+      alarmTime: isAlarmEnabled ? selectedTime : null,
       completed: false,
     });
     
@@ -437,7 +438,9 @@ export function SmartTodo() {
       initialType = repeatStr;
     }
     
-    setRepeatModalState({ isOpen: true, targetId: target, type: initialType, payload: initialPayload });
+    const initialCount = target === 'new' ? newTodoRepeatCount : 30;
+
+    setRepeatModalState({ isOpen: true, targetId: target, type: initialType, payload: initialPayload, count: initialCount });
   };
 
   const saveRepeatModal = () => {
@@ -456,6 +459,7 @@ export function SmartTodo() {
 
     if (targetId === 'new') {
       setNewTodoRepeat(computedRepeat);
+      setNewTodoRepeatCount(repeatModalState.count);
     } else {
       updateTask(targetId, { repeat: computedRepeat });
     }
@@ -1453,13 +1457,28 @@ export function SmartTodo() {
                    </div>
                  )}
 
-                 {repeatModalState.type === 'monthly' && (
+                  {repeatModalState.type === 'monthly' && (
                    <div className="animate-in slide-in-from-top-2">
                      <label className="text-xs text-muted-foreground mb-2 block">{t('label_select_date')}</label>
                      <input 
                         type="number" min="1" max="31"
                         value={repeatModalState.payload || '1'}
                         onChange={(e) => setRepeatModalState({...repeatModalState, payload: e.target.value})}
+                        className="w-full bg-secondary border border-border/50 rounded-xl px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/50"
+                     />
+                   </div>
+                 )}
+
+                 {repeatModalState.type !== 'none' && (
+                   <div className="animate-in slide-in-from-top-2">
+                     <label className="text-xs text-muted-foreground mb-2 block">{t('label_repeat_count')}</label>
+                     <input 
+                        type="number" min="1" max="99"
+                        value={repeatModalState.count}
+                        onChange={(e) => {
+                          const val = Math.min(Math.max(parseInt(e.target.value || 1, 10), 1), 99);
+                          setRepeatModalState({...repeatModalState, count: val});
+                        }}
                         className="w-full bg-secondary border border-border/50 rounded-xl px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/50"
                      />
                    </div>
