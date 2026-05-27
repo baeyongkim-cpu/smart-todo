@@ -24,7 +24,7 @@ const priorityConfig = {
 };
 
 const iconMap = {
-  Zap, Home, Star, Target, Coffee
+  Zap, Star, Target, Coffee
 };
 
 // Quotes moved to i18n.js
@@ -46,12 +46,18 @@ export function SmartTodo() {
       bgColor: 'linear-gradient(to bottom, #09090b, #18181b)',
       appTitle: 'Smart Tasks',
       appIcon: 'Zap',
-      accentColor: 'cyan'
+      accentColor: 'cyan',
+      theme: 'dark'
     };
   });
 
   useEffect(() => {
     localStorage.setItem('smart-todo-settings', JSON.stringify(settings));
+    if (settings.theme === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
   }, [settings]);
 
   const [newTodo, setNewTodo] = useState("");
@@ -64,6 +70,44 @@ export function SmartTodo() {
   const [isAlarmEnabled, setIsAlarmEnabled] = useState(false);
   const [isComposing, setIsComposing] = useState(false);
   const [isTimeModalOpen, setIsTimeModalOpen] = useState(false); // 시간 선택 모달 상태
+  
+  const fileInputRef = useRef(null);
+  
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 128;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/png', 0.8);
+        setSettings({ ...settings, appIcon: 'custom', customAppIconImage: dataUrl });
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
   
   const hourScrollRef = useRef(null);
   const minuteScrollRef = useRef(null);
@@ -529,7 +573,11 @@ export function SmartTodo() {
                 settings.accentColor === 'amber' ? "bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/25" :
                 "bg-gradient-to-br from-violet-500 to-purple-500 shadow-violet-500/25"
               )}>
-                <AppIcon className="h-5 w-5 text-white" />
+                {settings.appIcon === 'custom' && settings.customAppIconImage ? (
+                  <img src={settings.customAppIconImage} alt="App Icon" className="h-full w-full rounded-xl object-cover" />
+                ) : (
+                  <AppIcon className="h-5 w-5 text-white" />
+                )}
               </div>
               <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-background animate-pulse" />
             </div>
@@ -674,7 +722,7 @@ export function SmartTodo() {
                         }
                       }}
                       placeholder={t('placeholder_new_todo')}
-                      className="w-full bg-black/40 border-2 border-white/10 rounded-xl pl-4 pr-12 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary/50 transition-all shadow-2xl"
+                      className="w-full bg-background/40 border-2 border-border rounded-xl pl-4 pr-12 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary/50 transition-all shadow-2xl"
                     />
                     <button
                       onClick={handleAddTodo}
@@ -810,7 +858,7 @@ export function SmartTodo() {
                       {isAlarmEnabled && (
                         <button
                           onClick={() => setIsTimeModalOpen(true)}
-                          className="flex-1 bg-black/20 rounded-lg px-3 border border-white/5 h-8 flex items-center justify-between hover:bg-black/40 transition-colors"
+                          className="flex-1 bg-background/20 rounded-lg px-3 border border-border h-8 flex items-center justify-between hover:bg-background/40 transition-colors"
                         >
                           <span className="text-[13px] font-bold text-cyan-400">
                             {selectedTime || "00:00"}
@@ -1138,6 +1186,26 @@ export function SmartTodo() {
                                 </button>
                               )
                             })}
+                            <button
+                              onClick={() => fileInputRef.current?.click()}
+                              className={cn(
+                                "aspect-square rounded-xl flex items-center justify-center border transition-all relative overflow-hidden",
+                                settings.appIcon === 'custom' ? "bg-primary border-transparent shadow-lg" : "bg-secondary/30 border-border/50 text-muted-foreground hover:bg-secondary"
+                              )}
+                            >
+                              {settings.customAppIconImage ? (
+                                <img src={settings.customAppIconImage} className="w-full h-full object-cover" />
+                              ) : (
+                                <Plus className="h-5 w-5" />
+                              )}
+                              <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                onChange={handleImageUpload} 
+                                accept="image/*" 
+                                className="hidden" 
+                              />
+                            </button>
                           </div>
 
                           <div className="flex gap-3">
@@ -1153,6 +1221,29 @@ export function SmartTodo() {
                               />
                             ))}
                           </div>
+                       </div>
+                     </div>
+
+                     {/* Theme Mode Setting */}
+                     <div>
+                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 block">{t('theme_mode', '테마 모드')}</label>
+                       <div className="grid grid-cols-2 gap-3 mb-6">
+                         {[
+                           { name: 'Dark Mode', value: 'dark', icon: '🌙' },
+                           { name: 'Light Mode', value: 'light', icon: '🌞' }
+                         ].map(mode => (
+                           <button
+                             key={mode.value}
+                             onClick={() => setSettings({...settings, theme: mode.value})}
+                             className={cn(
+                               "px-4 py-3 rounded-xl text-xs font-medium border transition-all text-left flex items-center justify-between",
+                               settings.theme === mode.value ? "border-primary bg-primary/10 text-primary shadow-sm shadow-primary/10" : "border-border/50 bg-secondary/30 text-muted-foreground hover:border-border"
+                             )}
+                           >
+                             <span className="font-bold">{mode.name}</span>
+                             <span className="text-base">{mode.icon}</span>
+                           </button>
+                         ))}
                        </div>
                      </div>
 
@@ -1192,7 +1283,7 @@ export function SmartTodo() {
                            "text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider",
                            isPro 
                              ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-lg shadow-cyan-500/20" 
-                             : "bg-zinc-800 text-zinc-400 border border-zinc-700/50"
+                             : "bg-secondary text-muted-foreground border border-border/50"
                          )}>
                            {isPro ? t('plan_pro') : t('plan_free')}
                          </span>
@@ -1981,7 +2072,7 @@ function StatisticsView({ tasks, toggleTask, handleAIAnalysis, isAnalyzing, aiIn
                 </span>
                 <div className="group/tooltip relative">
                   <HelpCircle className="h-3 w-3 text-muted-foreground/50 cursor-help hover:text-cyan-400 transition-colors" />
-                  <div className="absolute left-0 bottom-full mb-2 w-52 p-3 bg-zinc-900 text-white text-[10px] rounded-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity z-50 shadow-2xl border border-white/10 leading-normal">
+                  <div className="absolute left-0 bottom-full mb-2 w-52 p-3 bg-popover text-popover-foreground text-[10px] rounded-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity z-50 shadow-2xl border border-border leading-normal">
                     {t('ai_score_desc')}
                   </div>
                 </div>

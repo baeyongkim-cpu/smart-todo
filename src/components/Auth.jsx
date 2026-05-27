@@ -63,11 +63,11 @@ const Auth = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#0A0A0A]">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-[#161616] p-8 rounded-3xl border border-white/5 shadow-2xl"
+        className="w-full max-w-md bg-card p-8 rounded-3xl border border-border shadow-2xl"
       >
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-[#00E5FF]/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#00E5FF]/20">
@@ -93,7 +93,7 @@ const Auth = ({ onLogin }) => {
                 maxLength={200}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-[#00E5FF]/50 transition-all"
+                className="w-full bg-background border border-input rounded-2xl py-3 pl-12 pr-4 text-foreground focus:outline-none focus:border-[#00E5FF]/50 transition-all"
                 placeholder="email@example.com"
               />
             </div>
@@ -109,7 +109,7 @@ const Auth = ({ onLogin }) => {
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-[#00E5FF]/50 transition-all"
+                className="w-full bg-background border border-input rounded-2xl py-3 pl-12 pr-4 text-foreground focus:outline-none focus:border-[#00E5FF]/50 transition-all"
                 placeholder="••••••••"
               />
             </div>
@@ -148,7 +148,7 @@ const Auth = ({ onLogin }) => {
         <div className="mt-6">
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#161616] px-2 text-gray-500">또는</span></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-gray-500">또는</span></div>
           </div>
 
           <button 
