@@ -14,7 +14,7 @@ export default async function handler(req, res) {
 
     const client = new DodoPayments({
       bearerToken: apiKey,
-      environment: process.env.NODE_ENV === 'production' && apiKey.includes('live_') ? 'live_mode' : 'test_mode',
+      environment: process.env.NODE_ENV === 'production' ? 'live_mode' : 'test_mode',
     });
 
     const { email } = req.body;
