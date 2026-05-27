@@ -1197,6 +1197,19 @@ export function SmartTodo() {
                            {isPro ? t('plan_pro') : t('plan_free')}
                          </span>
                        </div>
+
+                       {isPro && (
+                         <div className="space-y-3 px-3 pb-3">
+                           <a
+                             href="https://customer.dodopayments.com/"
+                             target="_blank"
+                             rel="noopener noreferrer"
+                             className="w-full py-2.5 rounded-xl bg-secondary/50 text-foreground text-xs font-bold hover:bg-secondary transition-all flex items-center justify-center cursor-pointer border border-border/50"
+                           >
+                             {t('manage_subscription')}
+                           </a>
+                         </div>
+                       )}
                        
                        {!isPro && (
                          <div className="space-y-3 pt-3 border-t border-border/20">
