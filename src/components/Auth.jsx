@@ -74,9 +74,12 @@ const Auth = ({ onLogin }) => {
             <Zap className="w-8 h-8 text-[#00E5FF]" />
           </div>
           <h2 className="text-3xl font-bold text-white mb-2">Smart Tasks</h2>
-          <p className="text-gray-400">
+          <p className="text-gray-400 mb-4">
             {isSignUp ? '새로운 계정을 만들어보세요' : '다시 오신 것을 환영합니다'}
           </p>
+          <div className="inline-block px-3 py-1.5 rounded-full bg-[#00E5FF]/10 border border-[#00E5FF]/20 text-xs font-semibold text-[#00E5FF]">
+            🎁 7일 무료 체험 (7일 이내 취소 시 100% 환불)
+          </div>
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">

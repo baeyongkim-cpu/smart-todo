@@ -1734,6 +1734,10 @@ export function SmartTodo() {
               <h3 className="text-2xl font-bold text-foreground mb-1">{t('upgrade_title')}</h3>
               <p className="text-xs text-primary font-bold mb-4">{t('upgrade_price')}</p>
               
+              <div className="bg-primary/10 border border-primary/20 rounded-lg px-3 py-2 mb-6 inline-flex items-center gap-2">
+                <span className="text-xs text-primary font-semibold">{t('trial_notice')}</span>
+              </div>
+              
               <div className="text-left space-y-3 mb-8 bg-secondary/20 p-4 rounded-2xl border border-border/50">
                 <div className="flex items-start gap-2 text-xs text-foreground">
                   <span className="text-primary font-bold">🚀</span>
