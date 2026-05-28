@@ -47,11 +47,11 @@ const ParticlesBackground = ({ effectType }) => {
         p.swingSpeed = 0.01 + Math.random() * 0.02;
       } else {
         // Leaves
-        p.vx = (Math.random() - 0.5) * 0.6;
-        p.vy = (Math.random() - 0.5) * 0.4 + 0.2;
+        p.vx = (Math.random() - 0.5) * 0.3;
+        p.vy = (Math.random() - 0.5) * 0.2 + 0.1;
         p.size = 7 + Math.random() * 5;
         p.angle = Math.random() * Math.PI * 2;
-        p.angleSpeed = (Math.random() - 0.5) * 0.025;
+        p.angleSpeed = (Math.random() - 0.5) * 0.0125;
         p.hue = 90 + Math.random() * 50;
       }
       return p;
@@ -109,7 +109,7 @@ const ParticlesBackground = ({ effectType }) => {
         p.swing += p.swingSpeed;
         p.vx = Math.sin(p.swing) * 0.5; // Sway left to right gently
       } else {
-        p.vy += 0.012; 
+        p.vy += 0.006; 
         p.angle += p.angleSpeed;
       }
       
