@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { getUserProfile, updateUserProfile } from "../utils/db";
 import { analyzeTasksWithAI } from "../utils/ai";
+import ParticlesBackground from "./ParticlesBackground";
 
 const categoryConfig = {
   home: { icon: Home, label: "category_home", color: "from-cyan-500 to-teal-500" },
@@ -43,11 +44,11 @@ export function SmartTodo() {
   const [settings, setSettings] = useState(() => {
     const saved = localStorage.getItem('smart-todo-settings');
     return saved ? JSON.parse(saved) : {
-      bgColor: 'linear-gradient(to bottom, #09090b, #18181b)',
+      theme: 'dark',
+      bgColor: 'aurora',
       appTitle: 'Smart Tasks',
       appIcon: 'Zap',
-      accentColor: 'cyan',
-      theme: 'dark'
+      accentColor: 'indigo'
     };
   });
 
@@ -530,6 +531,7 @@ export function SmartTodo() {
     <div 
       className="min-h-screen p-4 md:p-8 selection:bg-primary/30 transition-all duration-700 aurora-bg relative overflow-x-hidden"
     >
+      <ParticlesBackground effectType={settings.bgColor || 'aurora'} />
       {/* Aurora Blobs */}
       <div className="aurora-overlay">
         <motion.div 
@@ -1252,10 +1254,10 @@ export function SmartTodo() {
                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 block">{t('theme_select')}</label>
                        <div className="grid grid-cols-2 gap-3">
                          {[
-                           { name: 'OLED Black', value: 'linear-gradient(to bottom, #000000, #09090b)' },
-                           { name: 'Midnight', value: 'linear-gradient(to bottom, #09090b, #18181b)' },
-                           { name: 'Deep Space', value: 'linear-gradient(to bottom, #020617, #0f172a)' },
-                           { name: 'Navy Blue', value: 'linear-gradient(to bottom, #050b14, #0d141d)' }
+                           { name: '오로라', value: 'aurora', icon: '🌌' },
+                           { name: '낙엽', value: 'leaves', icon: '🍂' },
+                           { name: '반딧불', value: 'fireflies', icon: '✨' },
+                           { name: '눈송이', value: 'snow', icon: '❄️' }
                          ].map(theme => (
                            <button
                              key={theme.name}
@@ -1265,8 +1267,8 @@ export function SmartTodo() {
                                settings.bgColor === theme.value ? "border-primary bg-primary/10 text-primary" : "border-border/50 bg-secondary/30 text-muted-foreground hover:border-border"
                              )}
                            >
-                             {theme.name}
-                             <div className="h-3 w-3 rounded-full border border-white/10" style={{ background: theme.value }} />
+                             <span className="font-bold">{theme.name}</span>
+                             <span className="text-base">{theme.icon}</span>
                            </button>
                          ))}
                        </div>
