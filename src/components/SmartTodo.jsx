@@ -1250,8 +1250,8 @@ export function SmartTodo() {
                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 block">{t('theme_mode', '테마 모드')}</label>
                        <div className="grid grid-cols-2 gap-3 mb-6">
                          {[
-                           { name: 'Dark Mode', value: 'dark', icon: '🌙' },
-                           { name: 'Light Mode', value: 'light', icon: '🌞' }
+                           { name: t('dark_mode', 'Dark Mode'), value: 'dark', icon: '🌙' },
+                           { name: t('light_mode', 'Light Mode'), value: 'light', icon: '🌞' }
                          ].map(mode => (
                            <button
                              key={mode.value}
@@ -1273,10 +1273,10 @@ export function SmartTodo() {
                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 block">{t('theme_select')}</label>
                        <div className="grid grid-cols-2 gap-3">
                          {[
-                           { name: '오로라', value: 'aurora', icon: '🌌' },
-                           { name: '낙엽', value: 'leaves', icon: '🍂' },
-                           { name: '반딧불', value: 'fireflies', icon: '✨' },
-                           { name: '눈송이', value: 'snow', icon: '❄️' }
+                           { name: t('theme_aurora', '오로라'), value: 'aurora', icon: '🌌' },
+                           { name: t('theme_leaves', '낙엽'), value: 'leaves', icon: '🍂' },
+                           { name: t('theme_fireflies', '반딧불'), value: 'fireflies', icon: '✨' },
+                           { name: t('theme_snow', '눈송이'), value: 'snow', icon: '❄️' }
                          ].map(theme => (
                            <button
                              key={theme.name}
