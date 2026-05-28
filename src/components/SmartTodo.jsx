@@ -536,30 +536,30 @@ export function SmartTodo() {
       <div className="aurora-overlay">
         <motion.div 
           animate={{ 
-            x: [0, 200, -100, 0], 
-            y: [0, 150, -50, 0],
-            scale: [1, 1.3, 0.9, 1] 
+            x: ["0vw", "40vw", "-20vw", "0vw"], 
+            y: ["0vh", "30vh", "-10vh", "0vh"],
+            scale: [1, 1.4, 0.8, 1] 
           }}
           transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-          className="aurora-blob bg-emerald-500 top-[-10%] left-[-10%]" 
+          className="aurora-blob bg-emerald-500 top-[-20%] left-[-20%]" 
         />
         <motion.div 
           animate={{ 
-            x: [0, -150, 100, 0], 
-            y: [0, -100, 150, 0],
-            scale: [1, 0.8, 1.4, 1] 
+            x: ["0vw", "-30vw", "20vw", "0vw"], 
+            y: ["0vh", "-20vh", "40vh", "0vh"],
+            scale: [1, 0.7, 1.5, 1] 
           }}
           transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
-          className="aurora-blob bg-purple-500 bottom-[-10%] right-[-10%]" 
+          className="aurora-blob bg-purple-500 bottom-[-20%] right-[-20%]" 
         />
         <motion.div 
           animate={{ 
-            x: [0, 100, -150, 0], 
-            y: [0, -150, 100, 0],
-            scale: [1, 1.5, 0.8, 1] 
+            x: ["0vw", "20vw", "-40vw", "0vw"], 
+            y: ["0vh", "-40vh", "20vh", "0vh"],
+            scale: [1, 1.6, 0.9, 1] 
           }}
           transition={{ duration: 28, repeat: Infinity, ease: "easeInOut" }}
-          className="aurora-blob bg-rose-500 top-[30%] right-[10%]" 
+          className="aurora-blob bg-rose-500 top-[20%] right-[-10%]" 
         />
       </div>
 
