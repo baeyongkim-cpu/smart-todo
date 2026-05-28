@@ -121,12 +121,11 @@
 
   .dark .aurora-bg {
     background: linear-gradient(
-      120deg,
-      #09090b 0%,
-      #09090b 40%,
-      #1e1b4b 60%,
-      #0f172a 80%,
-      #09090b 100%
+      180deg,
+      #020617 0%,
+      #0f172a 40%,
+      #1e1b4b 70%,
+      #020617 100%
     );
   }
 
@@ -143,18 +142,18 @@
 
   .aurora-blob {
     position: absolute;
-    width: 60vw;
-    height: 60vw;
-    max-width: 800px;
-    max-height: 800px;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.8;
+    width: 35vw;
+    height: 120vh;
+    max-width: 500px;
+    border-radius: 100%;
+    filter: blur(100px);
+    opacity: 0.6;
     mix-blend-mode: hard-light;
+    transform-origin: center;
   }
 
   .dark .aurora-blob {
-    opacity: 0.7;
+    opacity: 0.45;
     mix-blend-mode: hard-light;
   }
 }
