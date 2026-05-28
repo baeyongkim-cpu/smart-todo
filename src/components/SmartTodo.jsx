@@ -586,9 +586,12 @@ export function SmartTodo() {
         {/* Header */}
         <header className="mb-6 flex flex-col md:flex-row justify-between md:items-end gap-4">
           <div className="flex items-center gap-3">
-            <div className="relative">
+            <button 
+              onClick={() => setIsSettingsOpen(true)}
+              className="relative group cursor-pointer transition-transform hover:scale-105"
+            >
               <div className={cn(
-                "h-10 w-10 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300",
+                "h-10 w-10 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:shadow-xl",
                 settings.accentColor === 'cyan' ? "bg-gradient-to-br from-cyan-500 to-teal-500 shadow-cyan-500/25" :
                 settings.accentColor === 'rose' ? "bg-gradient-to-br from-rose-500 to-pink-500 shadow-rose-500/25" :
                 settings.accentColor === 'amber' ? "bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/25" :
@@ -600,8 +603,10 @@ export function SmartTodo() {
                   <AppIcon className="h-5 w-5 text-white" />
                 )}
               </div>
-              <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-background animate-pulse" />
-            </div>
+              <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-background flex items-center justify-center shadow-sm border-2 border-background group-hover:rotate-90 transition-transform duration-300">
+                <Settings className="h-2.5 w-2.5 text-muted-foreground" />
+              </div>
+            </button>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold text-foreground tracking-tight">{settings.appTitle || t('app_title')}</h1>
@@ -620,12 +625,6 @@ export function SmartTodo() {
           </div>
           
           <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setIsSettingsOpen(true)}
-              className="p-2 h-9 w-9 flex items-center justify-center rounded-xl bg-secondary/50 text-muted-foreground hover:text-foreground transition-all hover:rotate-90"
-            >
-              <Settings className="h-5 w-5" />
-            </button>
             <div className="flex bg-secondary/50 p-1 rounded-lg">
               <button 
                 onClick={() => setActiveTab("home")}
