@@ -603,8 +603,11 @@ export function SmartTodo() {
                   <AppIcon className="h-5 w-5 text-white" />
                 )}
               </div>
-              <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-background flex items-center justify-center shadow-sm border-2 border-background group-hover:rotate-90 transition-transform duration-300">
-                <Settings className="h-2.5 w-2.5 text-muted-foreground" />
+              <div className="absolute -bottom-1.5 -right-1.5 group-hover:rotate-90 transition-transform duration-300">
+                <Settings className={cn(
+                  "h-4 w-4 transition-colors drop-shadow-md",
+                  syncStatus === 'SUBSCRIBED' ? "text-emerald-500" : "text-foreground"
+                )} />
               </div>
             </button>
             <div>
