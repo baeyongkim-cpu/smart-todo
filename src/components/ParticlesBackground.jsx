@@ -63,16 +63,23 @@ const ParticlesBackground = ({ effectType }) => {
     };
 
     const drawFirefly = (p) => {
+      const isDark = document.documentElement.classList.contains('dark');
       const alpha = (0.45 + 0.55 * Math.sin(p.glow)) * p.life;
       const r = p.size * 4.5;
       const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
-      grad.addColorStop(0,    `hsla(${p.hue}, 100%, 80%, ${alpha * 0.9})`);
-      grad.addColorStop(0.35, `hsla(${p.hue},  90%, 60%, ${alpha * 0.45})`);
-      grad.addColorStop(1,    `hsla(${p.hue},  80%, 40%, 0)`);
+      
+      const l1 = isDark ? '80%' : '35%';
+      const l2 = isDark ? '60%' : '25%';
+      const l3 = isDark ? '40%' : '15%';
+      const l4 = isDark ? '92%' : '20%';
+
+      grad.addColorStop(0,    `hsla(${p.hue}, 100%, ${l1}, ${alpha * 0.9})`);
+      grad.addColorStop(0.35, `hsla(${p.hue},  90%, ${l2}, ${alpha * 0.45})`);
+      grad.addColorStop(1,    `hsla(${p.hue},  80%, ${l3}, 0)`);
       ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
       ctx.fillStyle = grad; ctx.fill();
       ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 0.45, 0, Math.PI * 2);
-      ctx.fillStyle = `hsla(${p.hue}, 100%, 92%, ${alpha})`; ctx.fill();
+      ctx.fillStyle = `hsla(${p.hue}, 100%, ${l4}, ${alpha})`; ctx.fill();
     };
 
     const drawLeaf = (p) => {
@@ -92,10 +99,11 @@ const ParticlesBackground = ({ effectType }) => {
     };
 
     const drawSnow = (p) => {
+      const isDark = document.documentElement.classList.contains('dark');
       const alpha = p.life * 0.8;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.fillStyle = isDark ? `rgba(255, 255, 255, ${alpha})` : `rgba(140, 160, 180, ${alpha * 0.9})`;
       ctx.fill();
     };
 
