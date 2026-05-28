@@ -1,6 +1,8 @@
 /**
  * AI Quick Add Utility (Enhanced)
  */
+import { supabase } from './db';
+
 const callAIProxy = async (contents, model = 'gemini-flash-latest') => {
   const localKey = import.meta.env.VITE_GEMINI_API_KEY?.trim();
   
@@ -24,10 +26,24 @@ const callAIProxy = async (contents, model = 'gemini-flash-latest') => {
     }
   }
 
+  // 프록시 호출 시 인증 토큰 첨부
+  let authHeaders = {};
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      authHeaders['Authorization'] = `Bearer ${session.access_token}`;
+    }
+  } catch (e) {
+    console.warn("Failed to get auth session for AI proxy:", e);
+  }
+
   try {
     const response = await fetch('/api/ai', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...authHeaders
+      },
       body: JSON.stringify({ contents, model })
     });
 

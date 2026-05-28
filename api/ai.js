@@ -1,10 +1,35 @@
+import { createClient } from '@supabase/supabase-js';
+
 export default async function handler(req, res) {
   // 1. 보안 설정: POST 요청만 허용
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // 2. 환경 변수에서 API 키 로드 (서버 사이드이므로 안전함)
+  // 2. JWT 인증 검증 — 로그인된 사용자만 허용
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: Missing auth token' });
+  }
+
+  const token = authHeader.replace('Bearer ', '');
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+
+  if (supabaseUrl && supabaseKey) {
+    try {
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      if (error || !user) {
+        return res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
+      }
+    } catch (authErr) {
+      console.error('Auth verification error:', authErr);
+      return res.status(401).json({ error: 'Unauthorized: Token verification failed' });
+    }
+  }
+
+  // 3. 환경 변수에서 API 키 로드 (서버 사이드이므로 안전함)
   const API_KEY = process.env.GEMINI_API_KEY;
   
   if (!API_KEY) {

@@ -8,6 +8,12 @@ localforage.config({
   storeName: 'tasks'
 });
 
+// 재시도 큐 전용 스토리지
+const syncQueueStore = localforage.createInstance({
+  name: 'FocusFlow',
+  storeName: 'sync_queue'
+});
+
 const isValidUUID = (id) => {
   if (!id || typeof id !== 'string') return false;
   const cleaned = id.trim().toLowerCase();
@@ -15,7 +21,89 @@ const isValidUUID = (id) => {
   return cleaned.length > 10;
 };
 
-// 데이터 저장
+// ─── 재시도 큐 관련 함수 ───
+
+const addToSyncQueue = async (action) => {
+  try {
+    const queue = (await syncQueueStore.getItem('pending')) || [];
+    queue.push({ ...action, timestamp: Date.now() });
+    await syncQueueStore.setItem('pending', queue);
+  } catch (e) {
+    console.error('큐 저장 실패:', e);
+  }
+};
+
+const processSyncQueue = async (userId) => {
+  let queue;
+  try {
+    queue = (await syncQueueStore.getItem('pending')) || [];
+  } catch (e) {
+    return;
+  }
+  if (queue.length === 0) return;
+
+  const remaining = [];
+
+  for (const item of queue) {
+    try {
+      if (item.type === 'upsert') {
+        const { error } = await supabase
+          .from('tasks')
+          .upsert({ ...item.payload, user_id: userId });
+        if (error) {
+          remaining.push(item);
+        }
+      } else if (item.type === 'upsert_batch') {
+        const { error } = await supabase
+          .from('tasks')
+          .upsert(item.payload.map(t => ({ ...t, user_id: userId })));
+        if (error) {
+          remaining.push(item);
+        }
+      } else if (item.type === 'delete') {
+        const { error } = await supabase
+          .from('tasks')
+          .delete()
+          .eq('id', item.payload.id)
+          .eq('user_id', userId);
+        if (error) {
+          remaining.push(item);
+        }
+      }
+    } catch (err) {
+      remaining.push(item);
+    }
+  }
+
+  await syncQueueStore.setItem('pending', remaining);
+  if (remaining.length === 0) {
+    console.log('동기화 큐 비움: 모든 작업 서버 전송 완료');
+  } else {
+    console.warn(`동기화 큐: ${remaining.length}개 작업 재시도 대기`);
+  }
+};
+
+// ─── 태스크를 서버 포맷으로 변환하는 헬퍼 ───
+
+const toServerFormat = (t, userId) => ({
+  id: t.id,
+  user_id: userId,
+  text: t.text || t.title,
+  title: t.title || t.text,
+  date: t.date,
+  duration: t.duration,
+  category: t.category,
+  priority: t.priority,
+  repeat: t.repeat || 'none',
+  completed: !!t.completed,
+  completed_at: t.completedAt || t.completed_at,
+  created_at: t.createdAt || t.created_at,
+  repeat_id: isValidUUID(t.repeatId || t.repeat_id) ? (t.repeatId || t.repeat_id) : null,
+  alarm_time: t.alarmTime || t.alarm_time
+});
+
+// ─── 데이터 저장 ───
+
 export const saveTasks = async (tasks) => {
   // 1. 로컬에 먼저 안전하게 저장
   await localforage.setItem('tasks', tasks);
@@ -28,30 +116,25 @@ export const saveTasks = async (tasks) => {
     }
 
     // 2. 서버 업서트 (RLS 정책이 필요함)
+    const serverPayload = tasks.map(t => toServerFormat(t, user.id));
     const { error } = await supabase
       .from('tasks')
-      .upsert(tasks.map(t => ({
-        id: t.id,
-        user_id: user.id,
-        text: t.text || t.title,
-        title: t.title || t.text,
-        date: t.date,
-        duration: t.duration,
-        category: t.category,
-        priority: t.priority,
-        repeat: t.repeat || 'none',
-        completed: !!t.completed,
-        completed_at: t.completedAt || t.completed_at,
-        created_at: t.createdAt || t.created_at,
-        repeat_id: isValidUUID(t.repeatId || t.repeat_id) ? (t.repeatId || t.repeat_id) : null,
-        alarm_time: t.alarmTime || t.alarm_time
-      })));
+      .upsert(serverPayload);
     
     if (error) {
       console.error('Supabase 저장 실패 (RLS 정책을 확인하세요):', error.message);
+      // 실패 시 재시도 큐에 추가
+      await addToSyncQueue({ type: 'upsert_batch', payload: serverPayload });
     }
   } catch (err) {
     console.error('서버 동기화 중 오류:', err);
+    // 네트워크 에러 등 — 재시도 큐에 추가
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await addToSyncQueue({ type: 'upsert_batch', payload: tasks.map(t => toServerFormat(t, user.id)) });
+      }
+    } catch (_) {}
   }
   return tasks;
 };
@@ -66,34 +149,28 @@ export const saveOneTask = async (task, allTasks) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    const serverPayload = toServerFormat(task, user.id);
     const { error } = await supabase
       .from('tasks')
-      .upsert({
-        id: task.id,
-        user_id: user.id,
-        text: task.text || task.title,
-        title: task.title || task.text,
-        date: task.date,
-        duration: task.duration,
-        category: task.category,
-        priority: task.priority,
-        repeat: task.repeat || 'none',
-        completed: !!task.completed,
-        completed_at: task.completedAt || task.completed_at,
-        created_at: task.createdAt || task.created_at,
-        repeat_id: isValidUUID(task.repeatId || task.repeat_id) ? (task.repeatId || task.repeat_id) : null,
-        alarm_time: task.alarmTime || task.alarm_time
-      });
+      .upsert(serverPayload);
     
     if (error) {
       console.error('개별 태스크 저장 실패:', error.message);
+      await addToSyncQueue({ type: 'upsert', payload: serverPayload });
     }
   } catch (err) {
     console.error('개별 태스크 동기화 중 오류:', err);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await addToSyncQueue({ type: 'upsert', payload: toServerFormat(task, user.id) });
+      }
+    } catch (_) {}
   }
 };
 
-// 데이터 삭제 (로컬 먼저 → 서버 후)
+// ─── 데이터 삭제 (로컬 먼저 → 서버 후) ───
+
 export const deleteTaskDB = async (id) => {
   // 1. 로컬을 즉시 먼저 삭제 (새로고침 시 복구 방지)
   try {
@@ -118,10 +195,12 @@ export const deleteTaskDB = async (id) => {
       
       if (error) {
         console.error('Supabase 삭제 실패:', error.message);
+        await addToSyncQueue({ type: 'delete', payload: { id } });
       }
     }
   } catch (err) {
     console.error('서버 삭제 처리 중 오류:', err);
+    await addToSyncQueue({ type: 'delete', payload: { id } });
   }
 };
 
@@ -178,7 +257,28 @@ export const clearRepeatingTasksDB = async (repeatId = null) => {
   }
 };
 
-// 데이터 불러오기 (보호막 강화)
+// ─── 데이터 불러오기 (병합 알고리즘 적용) ───
+
+// 서버 row → 앱 camelCase 변환 헬퍼
+const normalizeServerTask = (t) => {
+  const rId = isValidUUID(t.repeat_id) ? t.repeat_id : null;
+  return {
+    id: t.id,
+    text: t.text,
+    title: t.title,
+    date: t.date,
+    duration: t.duration,
+    category: t.category,
+    priority: t.priority,
+    repeat: rId ? (t.repeat || 'none') : 'none',
+    completed: !!t.completed,
+    completedAt: t.completed_at,
+    createdAt: t.created_at,
+    repeatId: rId,
+    alarmTime: t.alarm_time
+  };
+};
+
 export const loadTasks = async () => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -189,6 +289,9 @@ export const loadTasks = async () => {
       return local || [];
     }
 
+    // 재시도 큐에 밀려있는 작업이 있으면 먼저 처리
+    await processSyncQueue(user.id);
+
     const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
 
     if (error) {
@@ -198,28 +301,36 @@ export const loadTasks = async () => {
     }
 
     if (data) {
-      const cleaned = data.map(t => {
-        const rId = isValidUUID(t.repeat_id) ? t.repeat_id : null;
-        return {
-          id: t.id,
-          text: t.text,
-          title: t.title,
-          date: t.date,
-          duration: t.duration,
-          category: t.category,
-          priority: t.priority,
-          repeat: rId ? (t.repeat || 'none') : 'none',
-          completed: !!t.completed,
-          completedAt: t.completed_at,
-          createdAt: t.created_at,
-          repeatId: rId,
-          alarmTime: t.alarm_time
-        };
-      });
+      const serverTasks = data.map(normalizeServerTask);
       
-      // 서버 응답이 성공(data가 존재)하면 0개라도 로컬을 동기화함
-      await localforage.setItem('tasks', cleaned);
-      return cleaned;
+      // ── 병합 알고리즘 ──
+      // 1. 서버 태스크를 Map으로 변환
+      const serverMap = new Map(serverTasks.map(t => [t.id, t]));
+      
+      // 2. 로컬 태스크 가져오기
+      const localTasks = (await localforage.getItem('tasks')) || [];
+      
+      // 3. 병합: 서버에 있는 건 서버 우선, 로컬에만 있는 건 보존
+      const merged = [];
+      const mergedIds = new Set();
+      
+      // 서버 태스크 전부 추가 (서버가 Single Source of Truth)
+      for (const task of serverTasks) {
+        merged.push(task);
+        mergedIds.add(task.id);
+      }
+      
+      // 로컬에만 있는 태스크 보존 (오프라인에서 추가된 것)
+      for (const task of localTasks) {
+        if (!mergedIds.has(task.id)) {
+          merged.push(task);
+          mergedIds.add(task.id);
+        }
+      }
+      
+      // 결과를 로컬에만 저장 (서버에 upsert하지 않음 — Realtime 충돌 방지)
+      await localforage.setItem('tasks', merged);
+      return merged;
     }
   } catch (err) {
     console.error('Load Error:', err);
@@ -234,6 +345,8 @@ export const clearAllTasksDB = async () => {
   await localforage.setItem('tasks', []);
 };
 
+// ─── 프로필 관련 ───
+
 // 프로필 정보 가져오기 (유료 여부 등)
 export const getUserProfile = async () => {
   try {
@@ -247,10 +360,10 @@ export const getUserProfile = async () => {
       .single();
 
     if (error && error.code === 'PGRST116') {
-      // 프로필이 없으면 생성
+      // 프로필이 없으면 upsert로 안전하게 생성 (중복 삽입 방지)
       const { data: newProfile, error: createError } = await supabase
         .from('profiles')
-        .insert([{ id: user.id, is_premium: false }])
+        .upsert([{ id: user.id, is_premium: false }], { onConflict: 'id' })
         .select()
         .single();
       
