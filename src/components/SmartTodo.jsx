@@ -666,7 +666,7 @@ export function SmartTodo() {
                     onClick={(e) => { e.stopPropagation(); handleGoToday(); }}
                     className="text-[10px] font-bold text-primary/70 hover:text-primary transition-colors uppercase tracking-wider"
                   >
-                    Today
+                    {t('return_to_today', '오늘로 돌아가기')}
                   </button>
                 )}
               </div>
