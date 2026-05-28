@@ -536,30 +536,33 @@ export function SmartTodo() {
       <div className="aurora-overlay">
         <motion.div 
           animate={{ 
-            x: ["0vw", "40vw", "-20vw", "0vw"], 
-            y: ["0vh", "30vh", "-10vh", "0vh"],
-            scale: [1, 1.4, 0.8, 1] 
+            x: ["0%", "100%", "-50%", "0%"], 
+            y: ["0%", "50%", "-20%", "0%"],
+            scale: [1, 1.8, 1.2, 1],
+            backgroundColor: ["#10b981", "#3b82f6", "#8b5cf6", "#10b981"]
           }}
-          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-          className="aurora-blob bg-emerald-500 top-[-20%] left-[-20%]" 
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          className="aurora-blob top-[-10%] left-[-10%]" 
         />
         <motion.div 
           animate={{ 
-            x: ["0vw", "-30vw", "20vw", "0vw"], 
-            y: ["0vh", "-20vh", "40vh", "0vh"],
-            scale: [1, 0.7, 1.5, 1] 
+            x: ["0%", "-100%", "80%", "0%"], 
+            y: ["0%", "-50%", "100%", "0%"],
+            scale: [1, 0.8, 2.0, 1],
+            backgroundColor: ["#8b5cf6", "#ec4899", "#ef4444", "#8b5cf6"]
           }}
-          transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
-          className="aurora-blob bg-purple-500 bottom-[-20%] right-[-20%]" 
+          transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+          className="aurora-blob bottom-[-10%] right-[-10%]" 
         />
         <motion.div 
           animate={{ 
-            x: ["0vw", "20vw", "-40vw", "0vw"], 
-            y: ["0vh", "-40vh", "20vh", "0vh"],
-            scale: [1, 1.6, 0.9, 1] 
+            x: ["0%", "80%", "-120%", "0%"], 
+            y: ["0%", "-100%", "50%", "0%"],
+            scale: [1, 2.2, 0.9, 1],
+            backgroundColor: ["#ef4444", "#f59e0b", "#10b981", "#ef4444"]
           }}
-          transition={{ duration: 28, repeat: Infinity, ease: "easeInOut" }}
-          className="aurora-blob bg-rose-500 top-[20%] right-[-10%]" 
+          transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+          className="aurora-blob top-[30%] right-[10%]" 
         />
       </div>
 
