@@ -125,6 +125,7 @@ export function SmartTodo() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiInsight, setAiInsight] = useState(null);
   const isPro = userProfile?.is_premium === true;
+  const isModalOpen = isSettingsOpen || isCalendarOpen || showUpgradeModal || isTimeModalOpen || completeModalState.isOpen || repeatModalState.isOpen;
 
   useEffect(() => {
     const loadUser = async () => {
@@ -137,6 +138,18 @@ export function SmartTodo() {
     };
     loadUser();
   }, []);
+
+  // 모달이 열려 있을 때 뒷배경 스크롤을 방지하여 모바일에서 화면이 위로 밀려나는 문제를 예방합니다.
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isModalOpen]);
 
   const quote = useMemo(() => {
     const quotesList = t('quotes', { returnObjects: true });
@@ -529,58 +542,10 @@ export function SmartTodo() {
 
   return (
     <div 
-      className={`min-h-screen p-4 md:p-8 selection:bg-primary/30 transition-all duration-700 relative overflow-x-hidden ${(!settings.bgColor || settings.bgColor === 'aurora') ? 'aurora-bg' : 'bg-gray-50 dark:bg-gray-900'}`}
+      className={`min-h-[100dvh] p-4 md:p-8 selection:bg-primary/30 transition-all duration-700 relative overflow-x-hidden ${(!settings.bgColor || settings.bgColor === 'aurora') ? 'aurora-bg' : 'bg-gray-50 dark:bg-gray-900'} ${isModalOpen ? 'aurora-paused modal-open-bg' : ''}`}
     >
       <ParticlesBackground effectType={settings.bgColor || 'aurora'} />
-      {/* Aurora Blobs */}
-      {(!settings.bgColor || settings.bgColor === 'aurora') && (
-        <div className="aurora-overlay">
-          <motion.div 
-            animate={{ 
-              x: ["-20%", "10%", "-10%", "-20%"], 
-              y: ["10%", "-5%", "5%", "10%"],
-              rotate: [15, 25, 10, 15],
-              scaleY: [1, 1.2, 0.9, 1],
-              backgroundColor: ["#10b981", "#06b6d4", "#a855f7", "#10b981"]
-            }}
-            transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-            className="aurora-blob bottom-[-20%] left-[-10%]" 
-          />
-          <motion.div 
-            animate={{ 
-              x: ["10%", "-15%", "20%", "10%"], 
-              y: ["0%", "10%", "-5%", "0%"],
-              rotate: [-15, -5, -25, -15],
-              scaleY: [1, 0.9, 1.3, 1],
-              backgroundColor: ["#d946ef", "#ec4899", "#8b5cf6", "#d946ef"]
-            }}
-            transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
-            className="aurora-blob bottom-[-10%] right-[15%]" 
-          />
-          <motion.div 
-            animate={{ 
-              x: ["25%", "0%", "15%", "25%"], 
-              y: ["-5%", "15%", "5%", "-5%"],
-              rotate: [5, 20, -10, 5],
-              scaleY: [1, 1.4, 1.1, 1],
-              backgroundColor: ["#06b6d4", "#10b981", "#3b82f6", "#06b6d4"]
-            }}
-            transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-            className="aurora-blob bottom-[-15%] left-[30%]" 
-          />
-          <motion.div 
-            animate={{ 
-              x: ["-10%", "20%", "-30%", "-10%"], 
-              y: ["10%", "-10%", "15%", "10%"],
-              rotate: [-25, -10, -30, -25],
-              scaleY: [1, 1.1, 0.8, 1],
-              backgroundColor: ["#a855f7", "#06b6d4", "#ec4899", "#a855f7"]
-            }}
-            transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-            className="aurora-blob bottom-[0%] right-[-10%]" 
-          />
-        </div>
-      )}
+
 
       <div className="mx-auto max-w-2xl relative z-10">
         {/* Header */}
@@ -1069,7 +1034,13 @@ export function SmartTodo() {
       {/* Settings Modal */}
       <AnimatePresence>
         {isSettingsOpen && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[70] flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 modal-backdrop z-[70] flex items-center justify-center p-4"
+          >
             <motion.div 
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1539,13 +1510,13 @@ export function SmartTodo() {
                  </button>
                </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* Repeat Configuration Modal */}
       {repeatModalState.isOpen && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
+        <div class="fixed inset-0 bg-background/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
            <div className="bg-card w-full max-w-sm rounded-2xl border border-border/50 shadow-2xl p-6 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-primary" />
               <h3 className="text-lg font-bold mb-4 text-foreground flex items-center gap-2">
@@ -1691,7 +1662,13 @@ export function SmartTodo() {
       {/* Custom Time Picker Modal */}
       <AnimatePresence>
         {isTimeModalOpen && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 modal-backdrop z-[100] flex items-center justify-center p-4"
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1800,14 +1777,20 @@ export function SmartTodo() {
                 {t('confirm')}
               </button>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* Calendar Picker Modal */}
       <AnimatePresence>
         {isCalendarOpen && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 modal-backdrop z-[60] flex items-center justify-center p-4"
+          >
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1836,14 +1819,20 @@ export function SmartTodo() {
               />
               </ErrorBoundary>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* Upgrade Modal */}
       <AnimatePresence>
         {showUpgradeModal && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 modal-backdrop-xl z-[100] flex items-center justify-center p-4"
+          >
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1891,7 +1880,7 @@ export function SmartTodo() {
                 </button>
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
