@@ -109,8 +109,9 @@ const ParticlesBackground = ({ effectType }) => {
         p.swing += p.swingSpeed;
         p.vx = Math.sin(p.swing) * 0.5; // Sway left to right gently
       } else {
-        p.vy += 0.006; 
+        p.vy += 0.003; 
         p.angle += p.angleSpeed;
+        if (p.vy > 0.6) p.vy = 0.6; // 최대 낙하 속도 제한 (Terminal Velocity)
       }
       
       p.x += p.vx; 
