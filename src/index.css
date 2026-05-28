@@ -146,13 +146,13 @@
     width: 800px;
     height: 800px;
     border-radius: 50%;
-    filter: blur(150px);
-    opacity: 0.5;
-    mix-blend-mode: multiply;
+    filter: blur(200px);
+    opacity: 0.4;
+    mix-blend-mode: normal;
   }
 
   .dark .aurora-blob {
-    opacity: 0.25;
+    opacity: 0.35;
     mix-blend-mode: screen;
   }
 }

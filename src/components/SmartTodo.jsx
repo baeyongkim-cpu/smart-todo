@@ -541,7 +541,7 @@ export function SmartTodo() {
             scale: [1, 1.3, 0.9, 1] 
           }}
           transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-          className="aurora-blob bg-emerald-500/30 top-[-20%] left-[-10%]" 
+          className="aurora-blob bg-emerald-500 top-[-10%] left-[-10%]" 
         />
         <motion.div 
           animate={{ 
@@ -550,7 +550,7 @@ export function SmartTodo() {
             scale: [1, 0.8, 1.4, 1] 
           }}
           transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
-          className="aurora-blob bg-purple-500/30 bottom-[-20%] right-[-10%]" 
+          className="aurora-blob bg-purple-500 bottom-[-10%] right-[-10%]" 
         />
         <motion.div 
           animate={{ 
@@ -559,7 +559,7 @@ export function SmartTodo() {
             scale: [1, 1.5, 0.8, 1] 
           }}
           transition={{ duration: 28, repeat: Infinity, ease: "easeInOut" }}
-          className="aurora-blob bg-rose-500/30 top-[30%] right-[10%]" 
+          className="aurora-blob bg-rose-500 top-[30%] right-[10%]" 
         />
       </div>
 
