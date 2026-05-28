@@ -1194,13 +1194,17 @@ export function SmartTodo() {
                             {Object.keys(iconMap).map(iconName => {
                               const IconComp = iconMap[iconName];
                               const isSelected = settings.appIcon === iconName;
+                              const selectedClass = settings.accentColor === 'cyan' ? 'bg-cyan-500 border-transparent text-white shadow-lg shadow-cyan-500/25' :
+                                                    settings.accentColor === 'rose' ? 'bg-rose-500 border-transparent text-white shadow-lg shadow-rose-500/25' :
+                                                    settings.accentColor === 'amber' ? 'bg-amber-500 border-transparent text-white shadow-lg shadow-amber-500/25' :
+                                                    'bg-violet-500 border-transparent text-white shadow-lg shadow-violet-500/25';
                               return (
                                 <button
                                   key={iconName}
                                   onClick={() => setSettings({...settings, appIcon: iconName})}
                                   className={cn(
                                     "aspect-square rounded-xl flex items-center justify-center border transition-all",
-                                    isSelected ? "bg-primary border-transparent text-primary-foreground shadow-lg" : "bg-secondary/30 border-border/50 text-muted-foreground hover:bg-secondary"
+                                    isSelected ? selectedClass : "bg-secondary/30 border-border/50 text-muted-foreground hover:bg-secondary"
                                   )}
                                 >
                                   <IconComp className="h-5 w-5" />
@@ -1211,7 +1215,12 @@ export function SmartTodo() {
                               onClick={() => fileInputRef.current?.click()}
                               className={cn(
                                 "aspect-square rounded-xl flex items-center justify-center border transition-all relative overflow-hidden",
-                                settings.appIcon === 'custom' ? "bg-primary border-transparent shadow-lg" : "bg-secondary/30 border-border/50 text-muted-foreground hover:bg-secondary"
+                                settings.appIcon === 'custom' ? (
+                                  settings.accentColor === 'cyan' ? 'bg-cyan-500 border-transparent text-white shadow-lg shadow-cyan-500/25' :
+                                  settings.accentColor === 'rose' ? 'bg-rose-500 border-transparent text-white shadow-lg shadow-rose-500/25' :
+                                  settings.accentColor === 'amber' ? 'bg-amber-500 border-transparent text-white shadow-lg shadow-amber-500/25' :
+                                  'bg-violet-500 border-transparent text-white shadow-lg shadow-violet-500/25'
+                                ) : "bg-secondary/30 border-border/50 text-muted-foreground hover:bg-secondary"
                               )}
                             >
                               {settings.customAppIconImage ? (
