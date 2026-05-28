@@ -1275,7 +1275,7 @@ export function SmartTodo() {
                          {[
                            { name: t('theme_aurora', '오로라'), value: 'aurora', icon: '🌌' },
                            { name: t('theme_leaves', '낙엽'), value: 'leaves', icon: '🍂' },
-                           { name: t('theme_fireflies', '반딧불'), value: 'fireflies', icon: '✨' },
+                           { name: t('theme_fireflies', '반딧불'), value: 'fireflies', icon: '🪲✨' },
                            { name: t('theme_snow', '눈송이'), value: 'snow', icon: '❄️' }
                          ].map(theme => (
                            <button
