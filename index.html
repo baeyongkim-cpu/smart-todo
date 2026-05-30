@@ -2,31 +2,68 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
     <!-- SEO Meta Tags -->
-    <meta name="description" content="FocusFlow - The ultimate AI-powered to-do list and productivity app. Manage your tasks efficiently. 포커스플로우 - 궁극의 AI 기반 할 일 목록 및 생산성 앱. 효율적으로 일정을 관리하세요." />
-    <meta name="keywords" content="to-do, todo list, task manager, productivity, AI, FocusFlow, 할일, 투두리스트, 생산성, 일정관리, 포커스플로우, 스마트 할일" />
-    <meta name="author" content="FocusFlow" />
+    <title>Smart Todo — AI-Powered Aesthetic To-Do List & Productivity App</title>
+    <meta name="description" content="Smart Todo — AI-powered aesthetic to-do app. Automate recurring tasks, organize with categories, and boost productivity with smart insights." />
+    <meta name="keywords" content="AI todo app, AI task manager, aesthetic to-do app, smart task manager, recurring tasks, study planner, productivity app, Smart Todo" />
+    <meta name="author" content="Smart Todo" />
     <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#10B981" />
+    
+    <!-- Canonical -->
+    <link rel="canonical" href="https://smart-todo-psi.vercel.app/" />
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="FocusFlow - Smart AI To-Do List | 스마트 AI 할일 관리" />
-    <meta property="og:description" content="FocusFlow - The ultimate AI-powered to-do list and productivity app. 포커스플로우 - 궁극의 AI 기반 할 일 목록 및 생산성 앱." />
-    <meta property="og:site_name" content="FocusFlow" />
+    <meta property="og:url" content="https://smart-todo-psi.vercel.app/" />
+    <meta property="og:title" content="Smart Todo — AI-Powered Aesthetic To-Do List" />
+    <meta property="og:description" content="AI-powered aesthetic to-do app. Automate recurring tasks, organize with categories, and boost productivity." />
+    <meta property="og:image" content="https://smart-todo-psi.vercel.app/og-image.png" />
+    <meta property="og:site_name" content="Smart Todo" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="ko_KR" />
     
     <!-- Twitter -->
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="FocusFlow - Smart AI To-Do List | 스마트 AI 할일 관리" />
-    <meta name="twitter:description" content="FocusFlow - The ultimate AI-powered to-do list and productivity app. 포커스플로우 - 궁극의 AI 기반 할 일 목록 및 생산성 앱." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Smart Todo — AI-Powered Aesthetic To-Do List" />
+    <meta name="twitter:description" content="AI-powered aesthetic to-do app. Automate recurring tasks, organize with categories, and boost productivity." />
+    <meta name="twitter:image" content="https://smart-todo-psi.vercel.app/og-image.png" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Smart Todo",
+      "url": "https://smart-todo-psi.vercel.app/",
+      "applicationCategory": "ProductivityApplication",
+      "operatingSystem": "Web, iOS, Android",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "description": "AI-powered aesthetic to-do app with recurring task automation, smart categories, and productivity analytics.",
+      "inLanguage": ["en", "ko"]
+    }
+    </script>
 
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-    <title>FocusFlow - Smart AI To-Do | 스마트 AI 할일 관리</title>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <div style="padding:40px;text-align:center;font-family:sans-serif;">
+        <h1>Smart Todo — AI-Powered To-Do List</h1>
+        <p>Automate recurring tasks, organize categories, and boost your productivity with AI insights.</p>
+        <p>Please enable JavaScript to use this app.</p>
+        <a href="https://smart-todo-landing.vercel.app/en.html" style="color:#10B981;">Learn More</a>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

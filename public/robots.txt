@@ -1,2 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /api/
+
+Sitemap: https://smart-todo-psi.vercel.app/sitemap.xml
