@@ -17,10 +17,10 @@ export default async function handler(req, res) {
       environment: process.env.NODE_ENV === 'production' ? 'live_mode' : 'test_mode',
     });
 
-    const { email } = req.body;
+    const { email, userId } = req.body;
     const origin = req.headers.origin || 'http://localhost:5173';
 
-    const session = await client.checkoutSessions.create({
+    const sessionConfig = {
       product_cart: [
         {
           product_id: process.env.VITE_DODO_PRODUCT_ID,
@@ -31,7 +31,13 @@ export default async function handler(req, res) {
       customer: {
         email: email || '',
       },
-    });
+    };
+
+    if (userId) {
+      sessionConfig.metadata = { user_id: userId };
+    }
+
+    const session = await client.checkoutSessions.create(sessionConfig);
 
     res.status(200).json({ checkout_url: session.checkout_url });
   } catch (error) {

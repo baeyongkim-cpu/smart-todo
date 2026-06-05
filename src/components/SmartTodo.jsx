@@ -412,7 +412,7 @@ export function SmartTodo() {
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userEmail }),
+        body: JSON.stringify({ email: userEmail, userId: userProfile?.id }),
       });
       
       const data = await response.json();

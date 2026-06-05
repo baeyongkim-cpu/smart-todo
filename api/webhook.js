@@ -71,28 +71,31 @@ export default async function handler(req, res) {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    // 1. auth.users 테이블에서 이메일로 user id 조회
-    const { data: listData, error: listError } = await supabase.auth.admin.listUsers();
-    if (listError) {
-      console.error('Failed to list users from admin API:', listError.message);
-      
-      // Fallback: 만약 service_role_key가 유효하지 않아 listUsers가 실패한다면,
-      // 프로필 테이블에 email이 없으므로 수동 매칭이 어렵습니다. 
-      // 이 경우 사용자는 SUPABASE_SERVICE_ROLE_KEY를 환경변수로 추가해주어야 합니다.
-      return res.status(500).json({ 
-        error: 'Failed to access authentication service. Make sure SUPABASE_SERVICE_ROLE_KEY is configured in Vercel.',
-        details: listError.message 
-      });
-    }
+    let userId = payloadData.metadata?.user_id;
 
-    const users = listData.users || [];
-    const targetUser = users.find(u => u.email?.toLowerCase() === customerEmail.toLowerCase());
-    if (!targetUser) {
-      console.warn(`User with email ${customerEmail} not found in Supabase Auth`);
-      return res.status(404).json({ error: `User with email ${customerEmail} not found` });
-    }
+    if (!userId) {
+      console.log('No metadata user_id found. Falling back to email search.');
+      // 1. auth.users 테이블에서 이메일로 user id 조회
+      const { data: listData, error: listError } = await supabase.auth.admin.listUsers();
+      if (listError) {
+        console.error('Failed to list users from admin API:', listError.message);
+        return res.status(500).json({ 
+          error: 'Failed to access authentication service. Make sure SUPABASE_SERVICE_ROLE_KEY is configured in Vercel.',
+          details: listError.message 
+        });
+      }
 
-    const userId = targetUser.id;
+      const users = listData.users || [];
+      const targetUser = users.find(u => u.email?.toLowerCase() === customerEmail.toLowerCase());
+      if (!targetUser) {
+        console.warn(`User with email ${customerEmail} not found in Supabase Auth`);
+        return res.status(404).json({ error: `User with email ${customerEmail} not found` });
+      }
+
+      userId = targetUser.id;
+    } else {
+      console.log(`Using metadata user_id for upgrade: ${userId}`);
+    }
 
     // 2. 이벤트 유형에 따른 처리
     // 구독 활성화, 생성, 혹은 일반 결제 성공
