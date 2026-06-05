@@ -1,5 +1,6 @@
 import DodoPayments from 'dodopayments';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 // Vercel에서 raw body를 받기 위한 설정
 export const config = {
@@ -15,6 +16,49 @@ async function getRawBody(readable) {
     chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
   }
   return Buffer.concat(chunks).toString('utf8');
+}
+
+// Meta Conversions API (CAPI) 전송 함수
+async function sendMetaConversionsAPI(email, eventName, value, currency) {
+  const pixelId = '1402009188470969';
+  const accessToken = 'EAAL3k4qAOe8BRlEPxDGSG3LPYVexgdl4BvFZA5pRcWXu1fRPq4wqLWAhXXbnBvx0AMuZBqjb2xZATLZA25OwoZCYikdZCwKwm92C2Cs86lGl9oz65ohhgKpMhTKIjk0TZCdul6SHDQZB4AbHU5ZBCY7P88ynT4MEAju9vSaylrraVOZBqWhTpj3ynPhKHo3szr2gZDZD';
+
+  if (!email) return;
+
+  try {
+    const hashedEmail = crypto.createHash('sha256').update(email.trim().toLowerCase()).digest('hex');
+    const unixTimestamp = Math.floor(Date.now() / 1000);
+
+    const payload = {
+      data: [
+        {
+          event_name: eventName,
+          event_time: unixTimestamp,
+          action_source: 'website',
+          user_data: {
+            em: [hashedEmail]
+          },
+          custom_data: {
+            currency: currency || 'USD',
+            value: value || 2.99
+          }
+        }
+      ]
+    };
+
+    const response = await fetch(`https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${accessToken}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const resData = await response.json();
+    console.log('Meta Conversions API response:', resData);
+  } catch (err) {
+    console.error('Failed to send Meta Conversions API event:', err);
+  }
 }
 
 export default async function handler(req, res) {
@@ -113,6 +157,11 @@ export default async function handler(req, res) {
         console.error('Failed to upgrade user profile to premium:', updateError.message);
         return res.status(500).json({ error: 'Failed to update user profile' });
       }
+
+      // Meta Conversions API에 Purchase(구매) 이벤트 비동기 전송
+      const amount = payloadData.amount ? (payloadData.amount / 100) : 2.99;
+      const currency = payloadData.currency || 'USD';
+      sendMetaConversionsAPI(customerEmail, 'Purchase', amount, currency);
 
       console.log(`Successfully upgraded user ${customerEmail} (ID: ${userId}) to Premium/Pro`);
       return res.status(200).json({ success: true, message: `Upgraded user ${customerEmail} to Premium` });
